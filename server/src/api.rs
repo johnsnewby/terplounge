@@ -118,6 +118,22 @@ pub async fn serve(translate_tx: Sender<translate::TranslationRequest>) {
             }
         });
 
+    let changes = warp::get()
+        .and(warp::path!("changes" / String / String / String))
+        .and_then(async move |asset_id, uuid, lang| {
+            match crate::compare::changes(asset_id, uuid, lang).await {
+                Ok(x) => {
+                    let changes = x.clone();
+                    let reply = warp::reply::json(&changes);
+                    Ok(reply)
+                }
+                Err(e) => {
+                    log::error!("Error in changes: {:?}", e);
+                    Err(warp::reject())
+                }
+            }
+        });
+
     let recordings_dir = std::env::var("RECORDINGS_DIR").unwrap_or("../recordings".to_string());
 
     let recordings = warp::get()
@@ -148,6 +164,7 @@ pub async fn serve(translate_tx: Sender<translate::TranslationRequest>) {
 
     let routes = index
         .or(assets)
+        .or(changes)
         .or(chat)
         .or(close)
         .or(compare)

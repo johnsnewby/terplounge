@@ -1,9 +1,8 @@
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use std::collections::HashMap;
 use std::path::Path;
 
-use crate::error::{Er, E};
+use crate::error::E;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Metadata {
