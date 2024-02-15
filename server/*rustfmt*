@@ -1,0 +1,11 @@
+error: unexpected closing delimiter: `)`
+   --> /home/newby/projects/terplounge/translation-alpha/server/src/session.rs:183:2
+    |
+133 | pub async fn user_message(my_id: usize, msg: Message) -> E<()>{
+    |                                                               - this opening brace...
+...
+183 | })
+    | -^ unexpected closing delimiter
+    | |
+    | ...matches this closing brace
+

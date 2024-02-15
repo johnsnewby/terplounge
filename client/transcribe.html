@@ -1,0 +1,124 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="css/main.css" />
+    <script src="js/transcription.js" type="module"></script>
+    <title>Transcription</title>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="message">
+          <h1>Transcription</h1>
+          <p>
+            This page is for you to make a transcript and recording of yourself
+            doing a simultaneous interpretation. When you click 'Start', the
+            server will automatically transcribe what you say and enter it into
+            the text box below. You can use
+            <img
+              src="img/icons8-copy-50.png"
+              class="inline-img"
+              id="copy"
+              title="Copy"
+              alt="Copy to clipboard"
+            />
+            to copy the text to the clipboard and paste it into a text editor
+            and
+            <img
+              src="img/icons8-trash-64.png"
+              class="inline-img"
+              id="clear"
+              title="Clear text"
+              alt="Clear text"
+            />
+            to clear the content.
+          </p>
+        </div>
+        <div class="logo">
+          <img src="img/logo-small.webp" class="logo-img" />
+        </div>
+      </div>
+      <div class="controlpanel">
+        <label for="inputSource" onchange="stopTranscription">Microphone</label>
+        <select name="inputSource" id="inputSource"></select>
+        <label for="lang">Language</label>
+        <select name="lang" id="lang" onchange="stopTranscription()">
+          <option value="en">English</option>
+          <option value="es">Espanol</option>
+          <option value="de">Deutsch</option>
+          <option value="fr">Francais</option>
+          <option value="it">Italien</option>
+        </select>
+        <button id="start">start</button>
+        <div class="control-icon-container">
+          <div id="progress-bar">
+            <div id="progress-bar-text">Transcription inactive</div>
+            <div id="progress-bar-inside"></div>
+          </div>
+          <div class="control-icons">
+            <a id="download-link" href="#"
+              ><img
+                src="img/download.svg"
+                class="inline-img"
+                id="download"
+                title="download"
+                alt="download recording" /></a
+            >&nbsp;&nbsp;
+            <img
+              src="img/icons8-copy-50.png"
+              class="inline-img"
+              id="copy"
+              title="Copy"
+              alt="Copy to clipboard"
+            />&nbsp;&nbsp;
+            <img
+              src="img/icons8-trash-64.png"
+              class="inline-img"
+              id="clear"
+              title="Clear text"
+              alt="Clear text"
+            />
+          </div>
+        </div>
+      </div>
+      <br />
+      <div class="content-caption">
+        <div>The transcript will appear in the pane below.</div>
+      </div>
+      <div class="content" id="content"></div>
+    </div>
+  </body>
+  <script language="javascript" type="module">
+    import { populateMicrophones } from "./js/transcribe.js";
+    console.log("before");
+    try {
+      await populateMicrophones();
+    } catch (e) {
+      console.log(`Error getting microphone: ${e}`);
+    }
+    console.log("after");
+    import { resetTranscription, state } from "./js/websocket.js";
+    resetTranscription();
+    function copyContent() {
+      var copyText = document.getElementById("content");
+      var copyImage = document.getElementById("copy");
+      navigator.clipboard.writeText(copyText.innerHTML);
+    }
+
+    function clearContent() {
+      document.getElementById("content").innerHTML = "";
+      state.transcription.reset();
+    }
+    for (var ele of document.querySelectorAll("[id=copy]")) {
+      ele.addEventListener("click", copyContent);
+    }
+    for (var ele of document.querySelectorAll("[id=clear]")) {
+      ele.addEventListener("click", () => {
+        if (confirm("Really clear all content?")) {
+          clearContent();
+        }
+      });
+    }
+  </script>
+</html>

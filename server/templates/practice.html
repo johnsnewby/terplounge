@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="/css/main.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="message">
+          <h1>{{ metadata.name}}</h1>
+          <p>
+            Practising translating {{ metadata.name }} from {{ metadata.native
+            }} to {{ lang }}
+          </p>
+        </div>
+        <div class="logo">
+          <img src="/img/logo-small.webp" class="logo-img" />
+        </div>
+      </div>
+      <div class="controlpanel">
+        <label for="inputSource" onchange="stopTranscription">Microphone</label>
+        <select name="inputSource" id="inputSource"></select>
+        <div id="status" name="status">Connecting</div>
+        <button id="start" onclick="go()">Start</button>
+      </div>
+      <div id="content">
+        <video width="80%" height="80%" id="player">
+          <source src="/serve_resource/{{ resource_path }}" />
+          Your browser does not support the video tag.
+        </video>
+      </div>
+      <a href="#" onClick="goToCompare('{{resource_path}}', '{{lang}}')"
+        >When you are done, click here</a
+      >
+    </div>
+    <input type="hidden" id="lang" name="lang" value="{{lang}}" />
+    <script>
+      var lang = "{{lang}}";
+    </script>
+    <script language="javascript" type="module">
+      import { populateMicrophones } from "/js/transcribe.js";
+      import { state, startPractice, goToCompare } from "/js/websocket.js";
+      const player = document.getElementById("player");
+      await populateMicrophones();
+
+      const go = () => {
+        startPractice();
+        player.play();
+      };
+
+      document.go = go;
+      document.goToCompare = goToCompare;
+      document.state = state;
+    </script>
+  </body>
+</html>

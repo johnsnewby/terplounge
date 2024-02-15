@@ -1,0 +1,121 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="css/main.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="message">
+          <h1>Practise</h1>
+          <p>
+            Here you can listen to an audio recording and practise your
+            interpreting skills. Choose a source language (the one you will be
+            listening to) and target (the one you'll be speaking) to see a list
+            of practise materials.
+          </p>
+        </div>
+        <div class="logo">
+          <img src="img/logo-small.webp" class="logo-img" />
+        </div>
+      </div>
+      <div class="controlpanel">
+        <div>
+          <label for="sourceLanguage">Source</label>&nbsp;<select
+            name="sourceLanguage"
+            id="sourceLanguage"
+            onChange="sourceUpdated()"
+          >
+            <option value="">Select a source language</option>
+          </select>
+          <label for="lang">Target language</label>
+          <select
+            name="targetLanguage"
+            id="targetLanguage"
+            onchange="targetUpdated()"
+          >
+            <option value=""></option>
+          </select>
+          <button name="go" id="go">Go</button>
+        </div>
+        <div id="content"></div>
+      </div>
+    </div>
+    <script language="javascript" type="module">
+      import {
+        getAllLanguages,
+        getLanguageName,
+        getTargetLanguagesForSourceLanguage,
+        getSources,
+        getCompatiblePracticeMaterials,
+      } from "./js/practise.js";
+
+      const targetLanguageSelector = document.getElementById("targetLanguage");
+      const langageSelector = document.getElementById("sourceLanguage");
+      const content = document.getElementById("content");
+
+      let allLanguages = await getAllLanguages();
+
+      for (const language of allLanguages) {
+        let option = document.createElement("option");
+        option.value = language;
+        option.text = getLanguageName(option.value);
+        langageSelector.add(option);
+      }
+
+      export const sourceUpdated = async () => {
+        content.innerHTML = "";
+        while (targetLanguageSelector.options.length > 1) {
+          targetLanguageSelector.remove(1);
+        }
+        const lang =
+          langageSelector.options[langageSelector.selectedIndex].value;
+        if (lang === "") {
+          return;
+        }
+
+        let targetLanguages = await getTargetLanguagesForSourceLanguage(lang);
+        for (var target of targetLanguages) {
+          let option = document.createElement("option");
+          option.value = target;
+          option.text = getLanguageName(target);
+          targetLanguageSelector.add(option);
+        }
+      };
+
+      export const targetUpdated = async () => {
+        console.log("fgoo");
+        let sourceLang =
+          langageSelector.options[langageSelector.selectedIndex].value;
+        if (sourceLang === "") {
+          return;
+        }
+
+        let targetLang =
+          targetLanguageSelector.options[targetLanguageSelector.selectedIndex]
+            .value;
+        if (targetLang === "") {
+          return;
+        }
+
+        let compatiblePracticeMaterials = await getCompatiblePracticeMaterials(
+          sourceLang,
+          targetLang,
+        );
+
+        content.innerHTML = "<h2>Available recordings</h2>";
+        for (var material of compatiblePracticeMaterials) {
+          content.innerHTML += `<a href="/practice/${material.directory}/${targetLang}" target="_blank">${material.metadata.name}</a><br>`;
+        }
+      };
+
+      window.sourceUpdated = sourceUpdated;
+      window.getTargetLanguagesForSourceLanguage =
+        getTargetLanguagesForSourceLanguage;
+      window.getSources = getSources;
+      window.getCompatiblePracticeMaterials = getCompatiblePracticeMaterials;
+      window.targetUpdated = targetUpdated;
+    </script>
+  </body>
+</html>

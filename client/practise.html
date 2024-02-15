@@ -1,0 +1,104 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="css/main.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="message">
+          <h1>Practise</h1>
+          <p>
+            Here you can listen to an audio recording and practise your
+            interpreting skills. Use the source below which is in
+          </p>
+        </div>
+        <div class="logo">
+          <img src="img/logo-small.webp" class="logo-img" />
+        </div>
+      </div>
+      <div class="controlpanel">
+        <label for="inputSource" onchange="stopTranscription">Microphone</label>
+        <select name="inputSource" id="inputSource"></select>
+        <div>
+          <label for="source-selector">Source</label>&nbsp;<select
+            name="source-selector"
+            id="source-selector"
+          >
+            <option value="">Choose a source to practise with</option>
+          </select>
+        <label for="lang">Target language</label>
+        <select name="lang" id="lang" onchange="stopTranscription()">
+        </select>
+          
+        </div>
+        <button id="start">start</button>
+        <div class="control-icon-container">
+          <div id="progress-bar">
+            <div id="progress-bar-text">Transcription inactive</div>
+            <div id="progress-bar-inside"></div>
+          </div>
+          <div class="control-icons">
+            <a id="download-link" href="#"
+              ><img
+                src="img/download.svg"
+                class="inline-img"
+                id="download"
+                title="download"
+                alt="download recording"
+            /></a>
+          </div>
+        </div>
+        <div class="player-container">
+          <figure id="player-figure">
+            <figcaption id="player-caption">Source</figcaption>
+            <audio
+              id="player"
+              controls
+              controlslist="nofullscreen nodownload noremoteplayback noplaybackrate foobar"
+            >
+              >
+            </audio>
+          </figure>
+        </div>
+        <div class="invisible" id="content"></div>
+        <a href="#" id="compare-link">
+          <img src="img/compare-8.svg" class="compare" id="compare"
+        /></a>
+      </div>
+    </div>
+    <script language="javascript" type="module">
+      import { populateSourceSelector, sourceChanged } from "./js/practise.js";
+      import { populateMicrophones } from "./js/transcribe.js";
+
+      await populateSourceSelector();
+      await populateMicrophones();
+      import { resetTranscription, state } from "./js/websocket.js";
+      resetTranscription();
+
+      const start = document.getElementById("start");
+      const player = document.getElementById("player");
+      start.addEventListener("click", (e) => {
+        player.play();
+      });
+
+      const sourceSelector = document.getElementById("source-selector");
+      sourceSelector.addEventListener("change", sourceChanged);
+
+      state.disconnectCallback = () => {
+        let compare = document.getElementById("compare");
+        compare.style.display = "block";
+        let lang;
+        let compareLink = document.getElementById("compare-link");
+        compareLink.href =
+          "compare/" +
+          document.getElementById("source-selector").value +
+          "/" +
+          state.uuid +
+          "/" +
+          document.getElementById("lang").value;
+      };
+    </script>
+  </body>
+</html>

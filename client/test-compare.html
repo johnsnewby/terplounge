@@ -1,0 +1,56 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="css/main.css" />
+    <script
+      type="text/javascript"
+      src="https://cdnjs.cloudflare.com/ajax/libs/mergely/5.0.0/mergely.min.js"
+    ></script>
+    <link
+      type="text/css"
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/mergely/5.0.0/mergely.css"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="message">
+          <h1>Compare</h1>
+        </div>
+      </div>
+      <div id="display" class="content"></div>
+      <script src="js/diff.js"></script>
+      <script>
+        const one = "Meine Mitbürger!\
+\
+Wir feiern heute nicht den Sieg einer Partei, sondern ein Fest der Freiheit – als Symbol für einen Endpunkt und einen Neuanfang – als Zeichen der Neubelebung und des Wandels. Denn ich habe vor euch und dem allmächtigen Gott denselben feierlichen Eid geschworen, den unsere Vorfahren verordnet haben, vor fast eindreiviertel Jahrhunderten.\
+\
+Die Welt hat sich inzwischen dramatisch verändert. Denn der Mensch hält in seinen vergänglichen Händen die Macht zur endgültigen Beseitigung aller Formen menschlicher Armut und aller Formen menschlichen Lebens. Und eben derselbe revolutionäre Glaube, für den unsere Vorfahren gefochten haben, ist noch immer Mittelpunkt unversöhnlicher Konfrontation überall auf dieser Welt – der Glaube, dass die Rechte des Menschen nicht großzügig vom Staat gewährt werden, sondern aus der Hand Gottes gegeben sind.\
+\
+Wir dürfen keinesfalls vergessen, dass wir die Erben jener ersten Revolution sind. Von diesem Ort und dieser Stunde soll an Freund und Feind gleichermaßen die Kunde ausgehen, dass die Fackel weitergereicht wurde an eine neue Generation von Amerikanern – geboren in diesem Jahrhundert, gehärtet durch Krieg, diszipliniert durch einen harten und bitteren Frieden",
+          other = " Vizepräsident Johnson, Mr. Speaker, Mr. Chief Justice, Präsident Eisenhower, Vizepräsident Nixon, Präsident Truman, verehrte Geistliche, liebe Mitbürger. Wir feiern heute nicht den Sieg einer Partei, sondern die Freiheit. Als Symbol für ein Ende wie für einen Anfang. Als Symbol für Erneuerung wie für den Wandel. Ich habe vor ihnen und dem ermächtigen Gott denselben feierlichen Eid gesprochen, den unsere Vorfahren vor fast einem Dreivierteljahrhundert abgelegt haben. Die Welt ist heute eine ganz andere. Denn der Mensch hält in seinen sterblichen Händen die Macht aller Formen der menschlichen Armut und aller Formen des menschlichen Lebens abzuschaffen. Und doch sind dieselben revolutionären Überzeugungen für die unsere Vorfachen gekämpft haben, immer noch auf der ganzen Welt im Gespräch. Die Überzeugung, dass die Reste des Menschen nicht aus der Großzügigkeit des Staates, aus der Hand Gottes kommen. Wir dürfen heute nicht vergessen, dass wir die Erben dieser ersten Revolution sind. Lasst von dieser Zeit und von diesem Ort aus Freund und Feind gleichermaßen wissen, dass die Fackel an eine neue Generation von Amerikanern weitergereicht wurde. Geborgen in diesem Jahrhundert, gestählt durch den Krieg, diszipliniert durch einen harten und bitteren Frieden.",
+          color = "";
+
+        let span = null;
+
+        const diff = Diff.diffChars(one, other),
+          display = document.getElementById("display"),
+          fragment = document.createDocumentFragment();
+
+        diff.forEach((part) => {
+          // green for additions, red for deletions
+          // grey for common parts
+          const color = part.added ? "green" : part.removed ? "red" : "black";
+          span = document.createElement("span");
+          span.style.color = color;
+          span.appendChild(document.createTextNode(part.value));
+          fragment.appendChild(span);
+        });
+
+        display.appendChild(fragment);
+      </script>
+    </div>
+  </body>
+</html>

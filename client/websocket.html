@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+    <head>
+         <meta charset="UTF-8"> 
+         <link rel="stylesheet" href="css/main.css">
+         <script src="js/transcription.js"></script>
+         <script language="javascript">
+          let transcription = new Transcription();
+         </script>
+    </head>
+    <body>
+        <div class="container" >
+            <div class=" header">
+                <div class='message'>
+                    <h1>Welcome to the alpha version of the site</h1>
+                    <p>
+                        This is the development version of the project code-named <i>terplounge</i>.
+                        <p>
+                            Click the <strong>connect</strong> button to connect to the transcription server, then the <strong>start</strong> button below when connected. As the transcription is generated it will appear in the text pane below. The <strong>start</strong> button will become a <strong>stop</strong> button&mdash;push that when you are done. Text may continue to appear for a while after you do that&mdash;the transcriber is not the fastest. You may choose from one of the available languages using the drop down list.
+                            </div>
+                <div class="logo"><img src="img/logo-small.webp"></div>
+            </div>
+           <div class="controlpanel">
+                <label for="controlpanel">Language</label>
+                <select name="lang" id="lang" onclick="langChanged()">
+                    <option value="">Sprache wählen</option>
+                    <option value="en">English</option>
+                    <option value="de">Deutsch</option>
+                </select>
+                <button id="connect">connect</button>
+                <button id="start" onclick='startRecording()'>start</button>
+                <span id="webSocketStatus">not connected</span>
+            </div>
+            <br/>
+            <div class="content" id="content"></div>
+        </div>
+    </body>
+    <script src='js/websocket.js'></script>
+    <script language="javascript">
+     console.log("Gooo");
+     document.getElementById("connect").addEventListener("click", (e) =>
+         connectToServer((segment) => {
+             transcription.addSegment(segment);
+             document.getElementById("content").innerHTML = transcription.getText()
+             console.log(transcription);
+         }));
+    </script>
+</html>

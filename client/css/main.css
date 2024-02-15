@@ -1,0 +1,181 @@
+@font-face {
+    font-family: 'Nunito';
+    src: url('../fonts/Nunito-VariableFont_wght.woff2');
+    font-weight: normal;
+}
+
+@font-face {
+    font-family: 'Nunito';
+    src: url('../fonts/Nunito-Italic-VariableFont_wght.woff2');
+    font-weight: normal;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'Lucida';
+    src: url('../fonts/LUCON.woff2');
+    font-weight: normal;
+}
+
+@font-face {
+    font-family: 'Garamond';
+    src: url('../fonts/EBGaramond-Regular.woff2');
+    font-weight: normal;
+}
+
+body {
+    color: black;    
+    font-family: 'Nunito';
+    background-color: #177886;
+    font-size: 14pt;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+h1 {
+    font-size: 14pt;
+}
+
+.container {
+    height: 96vh;
+    width: 94vw;
+    margin: 2vh 2vh 2vh 2vh;
+    border-style: solid;
+    border-color: black;
+    border-width: 1px;
+    border-radius: 10px;
+    padding: 5px;
+    display: flex;
+    flex-flow: column;
+}
+
+.logo-img {
+    opacity: 0.3;
+    width: 20vw;
+    height: 20vw;
+    z-index: -10;
+}
+
+.inline-img {
+    max-height: 1em;
+    cursor: pointer;
+}
+
+.header {
+    display: flex;
+    width: 90vw;
+}
+
+.message {
+    width: 80vw;
+    
+}
+
+.logo {
+    width: 5vw;
+    height:  5vw;
+    object-fit: contain;
+    z-index: -1;
+}
+
+#download {
+  display: none;
+}
+
+.invisible {
+  display: none;
+}
+
+#compare {
+  width: 90vw;
+  height: 80vh;
+  margin: auto;
+  display: none;
+}
+
+.control-icon-container {
+  margin-right: 2vw;
+  display: flex;
+  flex-direction: row;
+}
+
+.control-icon-container > img {
+    margin-right: 2vw;
+    display: flex;
+    flex-direction: row;
+    float: right;    
+}
+
+#progress-bar {
+  width: 60vw;
+  background-color: #ddd;
+  position: relative;
+}
+
+#progress-bar-inside {
+  width: 1%;
+  height: 30px;
+  background-color: #04AA6D;
+}
+
+#progress-bar-text {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+.control-icons {
+  margin: auto;
+  display: flex;
+}
+
+.controlpanel {
+
+}
+
+.controlpanel > * {
+    margin-right: 2vw;
+}
+
+.content-caption {
+    text-aligh: left;
+    display: flex;
+    flex-direction: row;
+}
+
+.content {
+    border: solid;
+    background-color:#d3d3d3;
+    font-family: Garamond;
+    display: visible;
+    border-style: solid;
+    border-color: black;
+    border-width: 1px;
+    padding: 2vh 2vw 2vh 2vw;
+    width: 88w;
+    height: 60vh;
+    bottom: 4vh;
+    overflow: scroll;
+    scroll-y: auto;
+    flex: 1 1 auto;
+}
+
+@media screen and (max-height: 450 px) {
+    body {
+        color: black;    
+        font-family: 'Nunito';
+        background-color: #177886;
+        font-size: 18pt;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+    }
+    
+    h1 {
+        font-size: 18pt;
+    }
+}
+
+    

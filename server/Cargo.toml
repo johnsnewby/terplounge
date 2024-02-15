@@ -1,0 +1,38 @@
+[package]
+name = "server"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+askama = "0.12.1"
+bytes = "1.5.0"
+chrono = { version = "*", features = [ "serde" ] }
+crossbeam-channel = "0.5.10"
+dotenv = "0.15.0"
+env_logger = "*"
+futures = { version = "0.3", default-features = false }
+futures-util = "0.3.28"
+hound = "3.5.1"
+imara-diff = "0.1.5"
+lazy_static = "*"
+log = "*"
+num_cpus = "1.16.0"
+pretty_env_logger = "0.5.0"
+rayon = "1.8.0"
+reqwest = { version = "0.11.23", features = [ "blocking", "json"] }
+rubato = "0.14.1"
+rust-embed="6.8.1"
+serde = {version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+symphonia = "0.5.3"
+symphonia-codec-pcm = "0.5.3"
+thread-priority = "0.15.1"
+tokio = { version = "1.35.1", features = ["macros", "sync", "rt-multi-thread"] }
+tokio-stream = "0.1.14"
+uuid = { version = "1.6.1", features = ["v4", "fast-rng", "macro-diagnostics", "serde"] }
+warp = "0.3"
+warp-embed = "0.4.0"
+whisper-rs = "0.8.0"
+

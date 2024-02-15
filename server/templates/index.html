@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="/css/main.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="message">
+          <h1>Index</h1>
+          <a href="/transcribe.html">Transcribe</a>
+          <p />
+          <a href="/practise.html">Practise</a>
+          <p />
+          Sessions
+          <ul>
+            {% for session in sessions %}
+            <li>
+              {{ session.uuid }} {{ session.created_at }}
+              <a href="/transcript/{{session.uuid}}">Transcript</a>
+              <a href="/recordings/{{session.uuid}}.wav">Recording</a>
+              <a href="/compare/2/{{session.uuid}}/de">Compare (2, de)</a>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

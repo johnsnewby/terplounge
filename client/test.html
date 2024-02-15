@@ -1,0 +1,26 @@
+<html>
+    <head><title>Test page for microphone input</title></head>
+    <body>
+	<script>
+	 var errorCallback = function(e) {
+	     console.log('Reeeejected!', e);
+	 };
+
+	 navigator.getUserMedia  = navigator.getUserMedia ||
+				   navigator.webkitGetUserMedia ||
+				   navigator.mozGetUserMedia ||
+				   navigator.msGetUserMedia;
+	 // Not showing vendor prefixes.
+	 navigator.getUserMedia({video: false, audio: true}, function(localMediaStream) {
+	     var audio = document.querySelector('audio');
+	     audio.src = window.URL.createObjectURL(localMediaStream);
+
+	     // Note: onloadedmetadata doesn't fire in Chrome when using it with getUserMedia.
+	     // See crbug.com/110938.
+	     audio.onloadedmetadata = function(e) {
+		 console.log(e);
+	     };
+	 }, errorCallback);
+	</script>
+    </body>
+</html>

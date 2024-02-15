@@ -1,0 +1,91 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="/css/main.css" />
+    <script
+      type="text/javascript"
+      src="https://cdnjs.cloudflare.com/ajax/libs/mergely/5.0.0/mergely.min.js"
+    ></script>
+    <link
+      type="text/css"
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/mergely/5.0.0/mergely.css"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="message">
+          <h1>Compare</h1>
+          Use <span onclick="showMergely()" id="show-mergely">Mergely</span> or
+          <span onclick="showJsDiff()" id="show-jsdiff"> JsDiff</span>
+        </div>
+      </div>
+      <div id="display" class="content"></div>
+      <script src="/js/diff.js"></script>
+      <script>
+        const one = "{{source}}",
+          other = "{{dest}}",
+          color = "";
+      </script>
+      <div id="compare"></div>
+      <script>
+        let jsDiffShown = false;
+
+        function showJsDiff() {
+          document.getElementById("compare").style.display = "none";
+          document.getElementById("display").style.display = "block";
+          document.getElementById("show-mergely").innerHTML = "Mergely";
+          document.getElementById("show-jsdiff").innerHTML = "<b>JsDiff</b>";
+
+          if (jsDiffShown) {
+            return;
+          }
+
+          jsDiffShown = true;
+
+          let span = null;
+
+          const diff = Diff.diffChars(one, other),
+            display = document.getElementById("display"),
+            fragment = document.createDocumentFragment();
+
+          diff.forEach((part) => {
+            const color = part.added ? "green" : part.removed ? "red" : "black";
+            span = document.createElement("span");
+            span.style.color = color;
+            span.appendChild(document.createTextNode(part.value));
+            fragment.appendChild(span);
+          });
+
+          display.appendChild(fragment);
+        }
+
+        let mergely = undefined;
+
+        function showMergely() {
+          document.getElementById("compare").style.display = "block";
+          document.getElementById("compare").style.height = "70vh";
+          document.getElementById("display").style.display = "none";
+          document.getElementById("show-mergely").innerHTML = "<b>Mergely</b>";
+          document.getElementById("show-jsdiff").innerHTML = "JsDiff";
+
+          if (mergely) {
+            return;
+          }
+          mergely = new Mergely("#compare", {
+            editor_width: "60vw",
+            wrap_lines: true,
+          });
+          mergely.once("updated", () => {
+            mergely.lhs(one);
+            mergely.rhs(other);
+          });
+        }
+
+        showJsDiff();
+      </script>
+    </div>
+  </body>
+</html>
