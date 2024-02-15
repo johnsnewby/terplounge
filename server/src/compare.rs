@@ -12,7 +12,7 @@ fn escape(from: String) -> String {
 }
 
 #[derive(Template)]
-#[template(path = "compare.html", escape = "none")]
+#[template(path = "compare.html")]
 pub struct Comparison {
     source: String,
     dest: String,

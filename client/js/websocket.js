@@ -86,7 +86,7 @@ export function startPractice() {
 }
 
 export function goToCompare(asset_id, lang) {
-  if (! stage.uuid) {
+  if (! state.uuid) {
     alert("Too soon!");
     return;
   }

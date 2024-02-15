@@ -30,9 +30,9 @@
           Your browser does not support the video tag.
         </video>
       </div>
-      <a href="#" onClick="goToCompare('{{resource_path}}', '{{lang}}')"
+      <!--      <a href="#" onClick="goToCompare('{{resource_path}}', '{{lang}}')"
         >When you are done, click here</a
-      >
+      > -->
     </div>
     <input type="hidden" id="lang" name="lang" value="{{lang}}" />
     <script>
@@ -42,11 +42,16 @@
       import { populateMicrophones } from "/js/transcribe.js";
       import { state, startPractice, goToCompare } from "/js/websocket.js";
       const player = document.getElementById("player");
+      const startButton = document.getElementById("start");
       await populateMicrophones();
 
       const go = () => {
         startPractice();
         player.play();
+        startButton.textContent = "When you're done speaking click here";
+        startButton.onclick = () => {
+          goToCompare("{{resource_path}}", "{{lang}}");
+        };
       };
 
       document.go = go;
