@@ -162,6 +162,42 @@ h1 {
     flex: 1 1 auto;
 }
 
+.compare-container {
+    display: flex;
+    overflow: scroll;
+    scroll-y: auto;
+    background-color:#d3d3d3;
+}
+
+.compare-text {
+    background-color:#d3d3d3;
+    font-family: Garamond;
+}    
+
+.compare-left {
+    flex: 1;
+    width: 50%;
+}
+
+.compare-right {
+    margin-right: 20px;
+    width: 50%;
+}
+
+.compare-equal {
+    font-weight: normal;
+}
+
+.compare-insert {
+    color: green;
+    font-weight: bold;
+}
+
+.compare-delete {
+    font-weight: bold;
+    color: red;
+}
+    
 @media screen and (max-height: 450 px) {
     body {
         color: black;    

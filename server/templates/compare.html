@@ -3,89 +3,56 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="stylesheet" href="/css/main.css" />
-    <script
-      type="text/javascript"
-      src="https://cdnjs.cloudflare.com/ajax/libs/mergely/5.0.0/mergely.min.js"
-    ></script>
-    <link
-      type="text/css"
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/mergely/5.0.0/mergely.css"
-    />
+    <title>Comparison</title>
   </head>
   <body>
     <div class="container">
       <div class="header">
         <div class="message">
-          <h1>Compare</h1>
-          Use <span onclick="showMergely()" id="show-mergely">Mergely</span> or
-          <span onclick="showJsDiff()" id="show-jsdiff"> JsDiff</span>
+          <h1>Comparison</h1>
+          <p>
+            On the left is your translation, and on the right is the reference
+            translation.
+          </p>
+        </div>
+        <div class="logo">
+          <img src="/img/logo-small.webp" class="logo-img" />
         </div>
       </div>
-      <div id="display" class="content"></div>
-      <script src="/js/diff.js"></script>
-      <script>
-        const one = `{{source}}`,
-          other = `{{dest}}`,
-          color = "";
-      </script>
-      <div id="compare"></div>
-      <script>
-        let jsDiffShown = false;
-
-        function showJsDiff() {
-          document.getElementById("compare").style.display = "none";
-          document.getElementById("display").style.display = "block";
-          document.getElementById("show-mergely").innerHTML = "Mergely";
-          document.getElementById("show-jsdiff").innerHTML = "<b>JsDiff</b>";
-
-          if (jsDiffShown) {
-            return;
-          }
-
-          jsDiffShown = true;
-
-          let span = null;
-
-          const diff = Diff.diffChars(one, other),
-            display = document.getElementById("display"),
-            fragment = document.createDocumentFragment();
-
-          diff.forEach((part) => {
-            const color = part.added ? "green" : part.removed ? "red" : "black";
-            span = document.createElement("span");
-            span.style.color = color;
-            span.appendChild(document.createTextNode(part.value));
-            fragment.appendChild(span);
-          });
-
-          display.appendChild(fragment);
-        }
-
-        let mergely = undefined;
-
-        function showMergely() {
-          document.getElementById("compare").style.display = "block";
-          document.getElementById("compare").style.height = "70vh";
-          document.getElementById("display").style.display = "none";
-          document.getElementById("show-mergely").innerHTML = "<b>Mergely</b>";
-          document.getElementById("show-jsdiff").innerHTML = "JsDiff";
-
-          if (mergely) {
-            return;
-          }
-          mergely = new Mergely("#compare", {
-            editor_width: "60vw",
-            wrap_lines: true,
-          });
-          mergely.once("updated", () => {
-            mergely.lhs(one);
-            mergely.rhs(other);
-          });
-        }
-
-        showJsDiff();
-      </script>
+      <div class="compare-container">
+        <div class="compare-left compare-text" id="dest"><h1>Yours</h1></div>
+        <div class="compare-right compare-text" id="source"><h1>Reference</h1></div>
+      </div>
     </div>
+    <script language="javascript" type="module">
+      let json = await fetch("/changes/{{resource}}/{{uuid}}/{{lang}}");
+      let diff = await json.json();
+      let source = document.getElementById("source");
+      let dest = document.getElementById("dest");
+      for (var change of diff) {
+        while (change.content[0] === "\n") {
+          dest.innerHTML += "<br>";
+          source.innerHTML += "<br>";
+          change.content = change.content.substring(1);
+        }
+        if (change.content === "") {
+          continue;
+        }
+        switch (change.change_type) {
+          case "delete":
+            dest.innerHTML += `<span class="compare-delete">${change.content}</span>`;
+            break;
+          case "insert":
+            source.innerHTML += `<span class="compare-insert">${change.content}</span>`;
+            break;
+          case "equal":
+            dest.innerHTML += change.content;
+            source.innerHTML += change.content;
+            break;
+          default:
+            console.log("Weird diff " + JSON.stringify(diff));
+        }
+      }
+    </script>
   </body>
 </html>

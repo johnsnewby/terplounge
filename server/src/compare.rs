@@ -16,8 +16,9 @@ fn escape(from: String) -> String {
 #[derive(Template)]
 #[template(path = "compare.html", escape = "none")]
 pub struct Comparison {
-    source: String,
-    dest: String,
+    resource: String,
+    uuid: String,
+    lang: String,
 }
 
 #[derive(Template)]
@@ -40,18 +41,11 @@ fn get_translation(resource_path: &String, lang: &String) -> E<String> {
 }
 
 async fn get_comparison(resource_path: &String, uuid: &String, lang: &String) -> E<Comparison> {
-    let source = get_translation(resource_path, lang)?;
-    let session_id = find_session_with_uuid(uuid)
-        .await
-        .expect("Session not found");
-
-    let session = match crate::session::get_session(&session_id).await {
-        Some(s) => s,
-        None => return Err(Er::new(format!("Session {} not found", session_id))),
-    };
-
-    let dest = escape(session.transcript()?);
-    Ok(Comparison { source, dest })
+    Ok(Comparison {
+        resource: resource_path.clone(),
+        uuid: uuid.clone(),
+        lang: lang.clone(),
+    })
 }
 
 #[derive(Clone, Serialize)]
@@ -61,11 +55,22 @@ pub struct Change {
 }
 
 pub async fn changes(resource_path: String, uuid: String, lang: String) -> E<Vec<Change>> {
+    let source = get_translation(&resource_path, &lang)?;
+    let session_id = find_session_with_uuid(&uuid)
+        .await
+        .expect("Session not found");
+
+    let session = match crate::session::get_session(&session_id).await {
+        Some(s) => s,
+        None => return Err(Er::new(format!("Session {} not found", session_id))),
+    };
+
+    let dest = session.transcript()?;
+
     let comparison = get_comparison(&resource_path, &uuid, &lang).await?;
     log::debug!("Comparing");
 
-    let diff =
-        TextDiff::configure().diff_words(comparison.source.as_str(), comparison.dest.as_str());
+    let diff = TextDiff::configure().diff_words(dest.as_str(), source.as_str());
     let changes: Vec<Change> = diff
         .iter_all_changes()
         .map(|x| Change {
