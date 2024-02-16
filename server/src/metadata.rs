@@ -20,7 +20,7 @@ pub struct Metadata {
 
 impl Metadata {
     pub fn from_filename(filename: String) -> E<Self> {
-        let mut f = std::fs::File::open(&filename)?;
+        let f = std::fs::File::open(&filename)?;
         let reader = std::io::BufReader::new(f);
         let mut metadata: Self = serde_json::from_reader(reader)?;
         metadata.enclosing_directory = Path::parent(&Path::new(&filename))

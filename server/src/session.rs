@@ -76,6 +76,16 @@ struct SavedSessionData {
     pub created_at: DateTime<Utc>,
 }
 
+#[derive(Clone, Debug, Serialize)]
+pub struct Status {
+    pub language: String,
+    pub uuid: Uuid,
+    pub resource: Option<String>,
+    pub sample_rate: u32,
+    pub transcription_job_count: usize,
+    pub transcription_completed_count: usize,
+}
+
 impl SessionData {
     fn new(
         id: usize,
@@ -160,11 +170,10 @@ impl SessionData {
 
     fn write_metadata(&self) -> E<()> {
         if let Ok(dir) = std::env::var("RECORDINGS_DIR") {
-            if let metadata_file = Some(format!("{}/{}/metadata.json", dir, self.uuid)) {
-                let mut file = std::fs::File::create(metadata_file.unwrap())?;
-                let json = json!(self).to_string();
-                file.write_all(json.as_bytes())?;
-            }
+            let metadata_file = format!("{}/{}/metadata.json", dir, self.uuid);
+            let mut file = std::fs::File::create(metadata_file)?;
+            let json = json!(self).to_string();
+            file.write_all(json.as_bytes())?;
         }
         Ok(())
     }
@@ -177,6 +186,17 @@ impl SessionData {
             file.write_all(transcript.as_bytes())?;
         }
         Ok(())
+    }
+
+    pub fn status(&self) -> E<Status> {
+        Ok(Status {
+            language: self.language.clone(),
+            uuid: self.uuid,
+            resource: self.resource.clone(),
+            sample_rate: self.sample_rate,
+            transcription_job_count: self.sequence_number,
+            transcription_completed_count: self.get_translation_count()?,
+        })
     }
 }
 

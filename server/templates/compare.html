@@ -14,45 +14,77 @@
             On the left is your translation, and on the right is the reference
             translation.
           </p>
+          <div id="progress"></div>
         </div>
         <div class="logo">
           <img src="/img/logo-small.webp" class="logo-img" />
         </div>
       </div>
       <div class="compare-container">
-        <div class="compare-left compare-text" id="dest"><h1>Yours</h1></div>
-        <div class="compare-right compare-text" id="source"><h1>Reference</h1></div>
+        <div class="compare-left compare-text" id="dest"></div>
+        <div class="compare-right compare-text" id="source"></div>
       </div>
     </div>
     <script language="javascript" type="module">
-      let json = await fetch("/changes/{{resource}}/{{uuid}}/{{lang}}");
-      let diff = await json.json();
-      let source = document.getElementById("source");
-      let dest = document.getElementById("dest");
-      for (var change of diff) {
-        while (change.content[0] === "\n") {
-          dest.innerHTML += "<br>";
-          source.innerHTML += "<br>";
-          change.content = change.content.substring(1);
+      const getStatus = async () => {
+        const json = await fetch("/status/{{uuid}}");
+        const status = await json.json();
+        return status;
+      };
+
+      let last_transcription_count = undefined;
+
+      const maybeUpdate = async () => {
+        const status = await getStatus();
+        if (last_transcription_count === status.transcription_completed_count) {
+          return;
         }
-        if (change.content === "") {
-          continue;
+        last_transcription_count = status.transcription_completed_count;
+        await updateDiffs();
+        if (
+          status.transcription_completed_count !==
+          status.transcription_job_count
+        ) {
+          setTimeout(maybeUpdate, 5000);
         }
-        switch (change.change_type) {
-          case "delete":
-            dest.innerHTML += `<span class="compare-delete">${change.content}</span>`;
-            break;
-          case "insert":
-            source.innerHTML += `<span class="compare-insert">${change.content}</span>`;
-            break;
-          case "equal":
-            dest.innerHTML += change.content;
-            source.innerHTML += change.content;
-            break;
-          default:
-            console.log("Weird diff " + JSON.stringify(diff));
+        const progressDiv = document.getElementById("progress");
+        progressDiv.innerHTML = `<h1>Transcribed ${status.transcription_completed_count} / ${status.transcription_job_count}</h1>`;
+      };
+
+      const updateDiffs = async () => {
+        const json = await fetch("/changes/{{resource}}/{{uuid}}/{{lang}}");
+        const diff = await json.json();
+        const source = document.getElementById("source");
+        let dest = document.getElementById("dest");
+        dest.innerHTML = "";
+        source.innerHTML = "";
+        for (var change of diff) {
+          while (change.content[0] === "\n") {
+            dest.innerHTML += "<br>";
+            source.innerHTML += "<br>";
+            change.content = change.content.substring(1);
+          }
+          if (change.content === "") {
+            continue;
+          }
+          switch (change.change_type) {
+            case "delete":
+              dest.innerHTML += `<span class="compare-delete">${change.content}</span>`;
+              break;
+            case "insert":
+              source.innerHTML += `<span class="compare-insert">${change.content}</span>`;
+              break;
+            case "equal":
+              dest.innerHTML += change.content;
+              source.innerHTML += change.content;
+              break;
+            default:
+              console.log("Weird diff " + JSON.stringify(diff));
+          }
         }
-      }
+      };
+
+      await maybeUpdate();
     </script>
   </body>
 </html>

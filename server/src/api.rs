@@ -99,7 +99,9 @@ pub async fn serve(translate_tx: Sender<translate::TranslationRequest>) {
     let status = warp::path!("status" / String).and_then(async move |uuid| {
         match crate::session::find_session_with_uuid(&uuid).await {
             Some(session_id) => match crate::session::get_session(&session_id).await {
-                Some(session) => Ok::<Json, warp::Rejection>(warp::reply::json(&session)),
+                Some(session) => {
+                    Ok::<Json, warp::Rejection>(warp::reply::json(&session.status().unwrap()))
+                }
                 None => Err(warp::reject::not_found()),
             },
             None => Err(warp::reject::not_found()),
