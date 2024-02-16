@@ -36,7 +36,8 @@
 
       const maybeUpdate = async () => {
         const status = await getStatus();
-        if (last_transcription_count === status.transcription_completed_count) {
+        console.log(`got status: ${status}`);
+        if (last_transcription_count === status.transcription_job_count) {
           return;
         }
         last_transcription_count = status.transcription_completed_count;
@@ -45,6 +46,7 @@
           status.transcription_completed_count !==
           status.transcription_job_count
         ) {
+          console.log("Setting timeout for update");
           setTimeout(maybeUpdate, 5000);
         }
         const progressDiv = document.getElementById("progress");
