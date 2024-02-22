@@ -35,4 +35,3 @@ uuid = { version = "1.6.1", features = ["v4", "fast-rng", "macro-diagnostics", "
 warp = "0.3"
 warp-embed = "0.4.0"
 whisper-rs = "0.8.0"
-

@@ -4,17 +4,106 @@ This repository contains the source code to Terplounge, a tool to allow solitary
 
 ## Overview
 
-The basic idea is that the user will listen to some spoken audio in one language (called the 'source' language), translate it into another ('target') language, and speak the translation out loud. A speech-to-text engine will transcribe the target audio, and at the end the user will be shown a comparison of the pre-existing translation, and their own.
+Terplounge is a tool which allows simultaneous interpreters to practice alone. It works by having audio and video of people speaking in one language, and a set of one or more translation transcripts in other languages. The user speaks into their microphone and Terplounge automatically transcribes what they say, and compares it to the 'official' translation. It's important to note that the system doesn't judge the correctness or otherwise of the users' translation, it simply compares it to the official translation.
 
-## The architecture
+## Technical overview
+
+The application consists of two parts, a server which exposes an API, and HTML/CSS/Javascript code which uses this API to provide a UX. The client-side (HTML) code serves two purposes: as an example of how to use the API, and as useable application in its own right. The front-end is bundled inside the server binary, making Terplounge usable by just downloading it to users' machines.
+
+## The server
+
+The backend ('server') is written in Rust, a high-performance language with memory-safety guarantees. The system is written to allow a choice of transcription engines--Whisper, an open-source speech-to-text system is bundled within the system, it performs relatively well on normal desktop hardware. The capability exists within the system for it to be used with commercial speech to text systems, or by integrating a system which uses a GPU to work more quickly.
+
+Audio is sent to the server by calling the `/chat` endpoint and specifying the user's bit rate. Data is sent as a sequence of mono 32-bit floats (WAV format). The server responds initially with a JSON object with this sessions UUID:
+
+```
+{"uuid":"354f6692-8aa8-4d9e-aa84-766689c85146"}
+```
+
+followed by a sequence of chunks like this:
+```
+{"num_segments":3,"segment_end":720,"segment_number":0,"segment_start":0,"sequence_number":1,"translation":" Wir feiern heute nicht den Sieg einer Partei, sondern die Freiheit.","uuid":"5055d383-6b80-4427-9865-242f878c71bf"}
+```
+as the transcription proceeds.
+
+After a period of 30 seconds in which no data is sent, the server side will automatically close the connection.
+
+There are fundamentally two ways to use the server, although one doesn't need to choose one or the other. In the first, transcriptions are created which can be used to build up a library for users to practice with. In the second, the transcription is compared with a reference and the differences between the two are returned. In both cases the transcript itself and a WAV file of the user's audio are stored on the machine hosting the server.
+
+In all cases the UUID returned by the websocket is used to identify the session. Apart from the inherent unguessability of the UUID there is no security implemented, the intention being that this would be provided by layers on top of the basic API, if needed.
+
+The calls which can be made with the UUID are:
+
+`/chat?lang=XX&resource=YYY&rate=ZZZZ`
+
+`lang` is a 2-letter language code, for instance `de`. If it's not specified, the backend will attempt to guess it. `rate` defaults to 48,000. Optionally `resource` identifies a resource bundle, as described below.
+
+`/close/:uuid`
+marks the session for closure when all outstanding transcriptions have been completed.
+
+`/serve_resource/:resource_path`
+Returns the metadata of a resource. If the path begins with `/` then it will be interpreted as the exact path to a resource bundle, if not then it will be relative to the resource root, which is specified using the `RESOURCE_PATH` environment variable.
+
+`/status/:uuid`
+Returns a JSON object in this form:
+
+```{"language":"","uuid":"2d82da3a-e2fc-4728-8c78-3f52481bscriptions have been completed.
+
+`/serve_resource/:resource_path`
+Returns the metadata of a resource. If the path begins with `/` then it will be interpreted as the exact path to a resource bundle, if not then it will be relative to the resource root, which is specified using the `RESOURCE_PATH` environment variable.
+
+`/status/:uuid`
+Returns a JSON object in this form:
+
+```{"language":"","uuid":"2d82da3a-e2fc-4728-8c78-3f52481bfbe2","resource":null,"sample_rate":48000,"transcription_job_count":7,"transcription_completed_count":0}```
+
+The `transcription_job_count` here can be compared with the `transcription_completion_count` to get an idea of how the transcription process is proceeding and give feedback to the user. There is sample code for theis in `server/templates/compare.html`.
+
+`/compare/:resource_id/:uuid/:lang`
+Compares the transcript stored for this session (which may be incomplete, when transcription tasks are still running) with the reference transcript. The comparison is an array of objects, looking like this:
+
+```
+  {
+    "change_type": "delete",
+    "content": " "
+  },
+  {
+    "change_type": "insert",
+    "content": "Mitbürger!"
+  },
+  {
+    "change_type": "insert",
+    "content": "\n\n"
+  },
+  {
+    "change_type": "equal",
+    "content": "Wir"
+  },
+  {
+    "change_type": "equal",
+    "content": " "
+  },
+  {
+    "change_type": "equal",
+    "content": "feiern"
+  },
+```
+
+## The client
+
+The client is programmed in HTML5, CSS and vanilla Javascript. There are no external libraries used. The intention is that the code will remain valid and useful for as long as possible. The assets are included in the binary, so one possible use case for Terplounge is to be downloaded and run on the user's machine, making the software useful even in the absence of anyone hosting it on a server.
+
+The basic entry point to the system is an index page showing the active sessions, and for each a link to its recording, its transcript and an HTML page which visualizes the changes between the user and reference transcripts. There is also a link to the transcript page, which has a useful button to copy the transcript to the clipboard.
+
+### Internals
 
 ![Architecture diagram](/doc/img/architecture.png "The Terploung architecture").
 
-Terplounge is designed to be usable as a hosted product, or on your machine. Its core is a Rust program which contains a version of the Whisper speech-to-text engine which is optimised to run on normal computers. Users connect to this program, which contains a web server, and stream audio to it, which is converted to text and stored in a session (which is not persisted--i.e. it is gone when the program terminates). The program ships with a minimal interface contained within itself, which exposes the basic features of terplounge.
+The system works by having a central multiple-producer, multiple-consumer queue onto which segments of audio are posted from the websocket(s), and which return JSON containing the fragments of transcription. Each segment is identified by a session number, and a sequence number, which monotonically increases for each session from 0. When the input connection is severed and the number of segments equals the sequence number, the output connection is also severed. After this point the data are all still held in memory, enabling the transcript and comparison still to be performed.
 
-However the idea is that these simple components are just the start of what can be done. By building a dynamic web site around these core services a rich environment can be created.
+The queuing system ensures that Terplounge will ultimately be able to process all audio, no matter how slowly.
 
-By default the system will use Whisper.cpp for its transcription services. This is a
+The idea is that there will be several queue consumers, suiting different use cases. Currently whisper.cpp is used, as a base which works on almost all machines. On my laptop it's nowhere near real time; on a fast desktop machine it processes with about a 30 second lag.
 
 # Installation
 

@@ -47,7 +47,7 @@ pub async fn serve_resource(
     let mut f = std::fs::File::open(content_path.clone()).unwrap();
     let metadata = std::fs::metadata(&content_path).expect("unable to read metadata");
     let mut buffer = vec![0; metadata.len() as usize];
-    f.read(&mut buffer).expect("buffer overflow");
+    let _ = f.read(&mut buffer).expect("buffer overflow");
     let b: Bytes = Bytes::from(buffer);
     let response = match Response::builder().body(b) {
         Ok(b) => b,
@@ -66,10 +66,7 @@ pub async fn serve(translate_tx: Sender<translate::TranslationRequest>) {
         .map(move |params: HashMap<String, String>, ws: warp::ws::Ws| {
             let tx = translate_tx.clone();
             let lang: String = (params.get("lang").unwrap_or(&"de".to_string())).clone();
-            let resource: Option<String> = match params.get("resource") {
-                Some(s) => Some(s.clone()),
-                None => None,
-            };
+            let resource: Option<String> = params.get("resource").cloned();
             let sample_rate: u32 = match params.get("rate") {
                 Some(rate) => rate.to_string(),
                 None => "44100".to_string(),
@@ -81,22 +78,23 @@ pub async fn serve(translate_tx: Sender<translate::TranslationRequest>) {
             })
         });
 
-    let close = warp::post().and(warp::path!("close" / String).and_then(async move |uuid| {
+    let close = warp::post().and(warp::path!("close" / String)
+				 .and_then( |uuid| async move {
         mark_session_for_closure_uuid(uuid).await;
         Ok::<&str, warp::Rejection>("foo")
     }));
 
     let practice = warp::get().and(
         warp::path!("practice" / String / String)
-            .and_then(async move |directory, lang| practice(directory, lang).await),
+            .and_then(|directory, lang| async move {practice(directory, lang).await}),
     );
 
     let serve_resource = warp::get().and(
         warp::path!("serve_resource" / String)
-            .and_then(async move |resource_path| serve_resource(resource_path).await),
+            .and_then( |resource_path| async move {serve_resource(resource_path).await}),
     );
 
-    let status = warp::path!("status" / String).and_then(async move |uuid| {
+    let status = warp::path!("status" / String).and_then( |uuid| async move {
         match crate::session::find_session_with_uuid(&uuid).await {
             Some(session_id) => match crate::session::get_session(&session_id).await {
                 Some(session) => {
@@ -110,7 +108,7 @@ pub async fn serve(translate_tx: Sender<translate::TranslationRequest>) {
 
     let compare = warp::get()
         .and(warp::path!("compare" / String / String / String))
-        .and_then(async move |asset_id, uuid, lang| {
+        .and_then( |asset_id, uuid, lang| async move {
             match crate::compare::compare(asset_id, uuid, lang).await {
                 Ok(x) => Ok(x),
                 Err(e) => {
@@ -122,7 +120,7 @@ pub async fn serve(translate_tx: Sender<translate::TranslationRequest>) {
 
     let changes = warp::get()
         .and(warp::path!("changes" / String / String / String))
-        .and_then(async move |asset_id, uuid, lang| {
+        .and_then( |asset_id, uuid, lang| async move {
             match crate::compare::changes(asset_id, uuid, lang).await {
                 Ok(x) => {
                     let changes = x.clone();
@@ -133,6 +131,7 @@ pub async fn serve(translate_tx: Sender<translate::TranslationRequest>) {
                     log::error!("Error in changes: {:?}", e);
                     Err(warp::reject())
                 }
+
             }
         });
 
@@ -147,7 +146,7 @@ pub async fn serve(translate_tx: Sender<translate::TranslationRequest>) {
         .and(warp::path("assets"))
         .and(warp::fs::dir(assets_dir));
 
-    let transcript = warp::path!("transcript" / String).and_then(async move |uuid| {
+    let transcript = warp::path!("transcript" / String).and_then( |uuid| async move {
         match crate::session::find_session_with_uuid(&uuid).await {
             Some(session_id) => match crate::session::get_session(&session_id).await {
                 Some(session) => Ok(session.transcript().unwrap()),
@@ -157,7 +156,7 @@ pub async fn serve(translate_tx: Sender<translate::TranslationRequest>) {
         }
     });
 
-    let index = warp::path::end().and_then(async move || crate::api::index().await);
+    let index = warp::path::end().and_then( || async move { crate::api::index().await} );
 
     #[derive(RustEmbed)]
     #[folder = "../client"]
