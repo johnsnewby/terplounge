@@ -34,32 +34,25 @@ In all cases the UUID returned by the websocket is used to identify the session.
 
 The calls which can be made with the UUID are:
 
-`/chat?lang=XX&resource=YYY&rate=ZZZZ`
+- `/chat?lang=XX&resource=YYY&rate=ZZZZ`
 
-`lang` is a 2-letter language code, for instance `de`. If it's not specified, the backend will attempt to guess it. `rate` defaults to 48,000. Optionally `resource` identifies a resource bundle, as described below.
+	`lang` is a 2-letter language code, for instance `de`. If it's not specified, the backend will attempt to guess it. `rate` defaults to 48,000. Optionally `resource` identifies a resource bundle, as described below.
 
-`/close/:uuid`
-marks the session for closure when all outstanding transcriptions have been completed.
+- `/close/:uuid`
+  marks the session for closure when all outstanding transcriptions have been completed.
 
-`/serve_resource/:resource_path`
-Returns the metadata of a resource. If the path begins with `/` then it will be interpreted as the exact path to a resource bundle, if not then it will be relative to the resource root, which is specified using the `RESOURCE_PATH` environment variable.
+- `/serve_resource/:resource_path`
+	Returns the metadata of a resource. If the path begins with `/` then it will be interpreted as the exact path to a resource bundle, if not then it will be relative to the resource root, which is specified using the `RESOURCE_PATH` environment variable.
 
-`/status/:uuid`
+- `/status/:uuid`
 Returns a JSON object in this form:
 
-```{"language":"","uuid":"2d82da3a-e2fc-4728-8c78-3f52481bscriptions have been completed.
+	```{"language":"","uuid":"2d82da3a-e2fc-4728-8c78-3f52481bfbe2","resource":null,"sample_rate":48000,"transcription_job_count":7,"transcription_completed_count":0}```
 
-`/serve_resource/:resource_path`
-Returns the metadata of a resource. If the path begins with `/` then it will be interpreted as the exact path to a resource bundle, if not then it will be relative to the resource root, which is specified using the `RESOURCE_PATH` environment variable.
+- The `transcription_job_count` here can be compared with the `transcription_completion_count` to get an idea of how the transcription process is proceedi
+ng and give feedback to the user. There is sample code for theis in `server/templates/compare.html`.
 
-`/status/:uuid`
-Returns a JSON object in this form:
-
-```{"language":"","uuid":"2d82da3a-e2fc-4728-8c78-3f52481bfbe2","resource":null,"sample_rate":48000,"transcription_job_count":7,"transcription_completed_count":0}```
-
-The `transcription_job_count` here can be compared with the `transcription_completion_count` to get an idea of how the transcription process is proceeding and give feedback to the user. There is sample code for theis in `server/templates/compare.html`.
-
-`/compare/:resource_id/:uuid/:lang`
+- `/compare/:resource_id/:uuid/:lang`
 Compares the transcript stored for this session (which may be incomplete, when transcription tasks are still running) with the reference transcript. The comparison is an array of objects, looking like this:
 
 ```
@@ -87,6 +80,7 @@ Compares the transcript stored for this session (which may be incomplete, when t
     "change_type": "equal",
     "content": "feiern"
   },
+
 ```
 
 ## The client
