@@ -224,11 +224,15 @@ pub fn process_transcription(session_id: usize, response: &TranslationResponse) 
         json!(session).to_string(),
         session.last_sequence,
     );
-    session
+    match session
         .transcription_sender_tx
         .as_ref()
         .ok_or("couldn't find sender")?
-        .send(Message::text(json!(response).to_string()))?;
+        .send(Message::text(json!(response).to_string()))
+    {
+        Ok(_) => (),
+        Err(e) => log::info!("Error sending: {:?}", e),
+    };
     session
         .translations
         .lock()

@@ -23,12 +23,13 @@
         <div id="status" name="status">Connecting</div>
         <button id="start" onclick="go()">Start</button>
       </div>
-      <div id="content">
+      <div id="player-container">
         <video width="80%" height="80%" id="player">
           <source src="/serve_resource/{{ resource_path }}" />
           Your browser does not support the video tag.
         </video>
       </div>
+      <div id="content" display="none"></div>
       <!--      <a href="#" onClick="goToCompare('{{resource_path}}', '{{lang}}')"
         >When you are done, click here</a
       > -->

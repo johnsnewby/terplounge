@@ -61,7 +61,6 @@ h1 {
     padding: 1vh;
     display: flex;
     flex-flow: column;
-//    box-shadow: brown -1vh 1vh;
 }
 
 .container .logo {
@@ -177,6 +176,13 @@ h1 {
     overflow: scroll;
     scroll-y: auto;
     flex: 1 1 auto;
+}
+
+.player-container {
+    padding: 2vh 2vw 2vh 2vw;
+    width: 88w;
+    height: 60vh;
+    bottom: 4vh;
 }
 
 .compare-container {

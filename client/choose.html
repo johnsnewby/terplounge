@@ -102,7 +102,7 @@
           targetLang,
         );
 
-        content.innerHTML = "<h2>Available recordings</h2>";
+        content.innerHTML = "<h1>Available recordings</h1>";
         for (var material of compatiblePracticeMaterials) {
           content.innerHTML += `<a href="/practice/${material.directory}/${targetLang}" target="_blank">${material.metadata.name}</a><br>`;
         }

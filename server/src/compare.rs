@@ -81,7 +81,7 @@ pub async fn changes(resource_path: String, uuid: String, lang: String) -> E<Vec
             content: x.value().to_string(),
         })
         .collect();
-    log::debug!("Changes: {}", json!(changes).to_string());
+    log::trace!("Changes: {}", json!(changes).to_string());
     Ok(changes)
 }
 
