@@ -18,6 +18,18 @@
 }
 
 @font-face {
+    font-family: 'Terplounge';
+    src: url('../fonts/JLSSpaceGothic-RNC.woff2');
+    font-weight: normal;
+}
+
+@font-face {
+    font-family: 'TerploungeBody';
+    src: url('../fonts/JLSDataGothic-RNC.woff2');
+    font-weight: normal;
+}
+
+@font-face {
     font-family: 'Garamond';
     src: url('../fonts/EBGaramond-Regular.woff2');
     font-weight: normal;
@@ -26,7 +38,7 @@
 body {
     color: black;    
     font-family: 'Nunito';
-    background-color: #177886;
+    background-color: #fffafa;
     font-size: 14pt;
     width: 100%;
     height: 100%;
@@ -34,21 +46,34 @@ body {
 }
 
 h1 {
-    font-size: 14pt;
+    font-family: 'TerploungeBody';
+    font-size: 16pt;
 }
 
 .container {
-    height: 96vh;
-    width: 94vw;
-    margin: 2vh 2vh 2vh 2vh;
+    height: 90vh;
+    width: 93vw;
+    margin: 2vh 2vh 1vh 1vh;
     border-style: solid;
-    border-color: black;
-    border-width: 1px;
-    border-radius: 10px;
-    padding: 5px;
+    border-color: orange;
+    border-width: 2vh;
+    border-radius: 4vh;
+    padding: 1vh;
     display: flex;
     flex-flow: column;
+    box-shadow: brown -1vh 1vh;
 }
+
+.container .logo {
+    margin-top:1vh;
+    margin-right: 1vh;
+    width: 93vw;
+    text-align: right;
+    font-family: 'Terplounge';
+    font-size: 50pt;
+    z-index: 10;
+    color:black;
+}    
 
 .logo-img {
     opacity: 0.3;
