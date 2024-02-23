@@ -99,6 +99,47 @@ The queuing system ensures that Terplounge will ultimately be able to process al
 
 The idea is that there will be several queue consumers, suiting different use cases. Currently whisper.cpp is used, as a base which works on almost all machines. On my laptop it's nowhere near real time; on a fast desktop machine it processes with about a 30 second lag.
 
+### A guide to the source code files
+
+`api.rs` provides the REST API, using the Warp server framework.
+`compare.rs` uses the `similar` crate to perform comparison of the reference and user translations.
+`dotfiles.rs` is not used currently
+`error.rs` provides the `E<_>` result type, and the `Er` error type
+`main.rs` has as little code in as possible
+`metadata.rs` code to manipulate the resource bundles, described below
+`queue.rs` functions to manipulate the queues.
+`session.rs` session handling
+`translate.rs` should be called `transcribe.rs`
+`whispercpp.rs` the code which processes audio through `whisper.cpp` and receives text in retusn
+`whisperx.rs` code to call an external whisperx server for greater throughput
+
+## Resource bundles
+
+A Terplounge resource bundle is a directory containing a set of files. One of these must be called `metadata.json` and look like this:
+
+```
+{
+  "name": "John F Kennedy swearing-in ceremony and inaugural address, 20 January 1961",
+  "url": "https://www.jfklibrary.org/asset-viewer/archives/JFKWHA/1961/JFKWHA-001/JFKWHA-001",
+  "license": "US Govt",
+  "audio": "main.mp4",
+  "native": "en",
+  "transcript": "en.txt",
+  "translations":
+    { "de": "de.txt" }
+}
+```
+
+The fields have the following meaning
+
+- `name` is the identifier which is presented to the user.
+- `url` should if possible point to the source of the audio/video
+- `license` is never spelled correctly, and identified the license which the work is used under
+- `audio` can also mean video and must be a file in the form a browser can recognize and play
+- `native` indicates the native language of the resource
+- `transcript` is a transcript of the audio, if available
+- `translations` is an object containing key-value pairs of language codes, and files in text format with the reference translation.
+
 # Installation
 
 ## Installation steps

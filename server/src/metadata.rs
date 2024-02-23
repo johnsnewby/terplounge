@@ -23,7 +23,7 @@ impl Metadata {
         let f = std::fs::File::open(&filename)?;
         let reader = std::io::BufReader::new(f);
         let mut metadata: Self = serde_json::from_reader(reader)?;
-        metadata.enclosing_directory = Path::parent(&Path::new(&filename))
+        metadata.enclosing_directory = Path::parent(Path::new(&filename))
             .unwrap()
             .to_str()
             .unwrap()
@@ -32,7 +32,7 @@ impl Metadata {
     }
 
     pub fn from_resource_path(resource_path: &String) -> E<Self> {
-        let full_path = if resource_path.starts_with("/") {
+        let full_path = if resource_path.starts_with('/') {
             resource_path.clone()
         } else {
             format!(

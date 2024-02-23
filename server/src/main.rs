@@ -1,6 +1,3 @@
-#![feature(let_chains)]
-#![feature(async_closure)]
-
 mod api;
 mod compare;
 mod error;
@@ -32,7 +29,7 @@ async fn main() {
     whispercpp::start_translate_pool().unwrap();
     log::debug!("Made WhisperCpp pool");
     if std::env::var("WHISPER_SERVER").is_ok() {
-        std::thread::spawn(async move || {
+        std::thread::spawn(move || async {
             set_current_thread_priority(ThreadPriority::Crossplatform(
                 HIGHER_PRIORITY.try_into().unwrap(),
             ))
@@ -45,7 +42,7 @@ async fn main() {
         log::debug!("Started remote whisper process");
     }
 
-    std::thread::spawn(async move || queue::get_queue().queue_process(translate_rx).await);
+    std::thread::spawn(move || async { queue::get_queue().queue_process(translate_rx).await});
     log::debug!("Made enqueuing process");
     serve(translate_tx).await;
 }

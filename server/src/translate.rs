@@ -43,7 +43,7 @@ impl TranslationResponses {
     }
 
     pub fn add_translation(&mut self, response: &TranslationResponse) -> E<()> {
-        let sequence_number = response.sequence_number as usize;
+        let sequence_number = response.sequence_number;
         let segment_number = response.segment_number as usize;
         if self.0.len() < sequence_number + 1 {
             log::debug!(

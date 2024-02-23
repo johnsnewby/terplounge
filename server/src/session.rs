@@ -236,17 +236,20 @@ pub fn process_transcription(session_id: usize, response: &TranslationResponse) 
         .deref_mut()
         .add_translation(&response.clone())?;
 
-    if let Some(last) = session.last_sequence
-        && session.sequence_number >= last
-        && response.segment_number == response.num_segments - 1
-        && let Ok(translation_count) = session.get_translation_count()
-        && translation_count >= last + 1
-    {
-        log::debug!(
-            "Last sequence set and reached. Finalizing session {}.",
-            session_id
-        );
-        session.finalize_session();
+    if let Some(last) = session.last_sequence {
+        if session.sequence_number >= last && response.segment_number == response.num_segments - 1 {
+            if let Ok(translation_count) = session.get_translation_count() {
+                if translation_count > last {
+                    {
+                        log::debug!(
+                            "Last sequence set and reached. Finalizing session {}.",
+                            session_id
+                        );
+                        session.finalize_session();
+                    }
+                }
+            }
+        }
     }
     Ok(())
 }
@@ -311,59 +314,61 @@ pub async fn user_message(session_id: usize, msg: Message) -> E<()> {
         return Ok(());
     }
     let data = msg.into_bytes();
-    if let Some(session) = get_session(&session_id).await
-        && let Some(ref _transcription_sender_tx) = session.transcription_sender_tx
-    {
-        let mut v: Vec<f32> = data
-            .chunks_exact(4)
-            .map(|a| f32::from_le_bytes([a[0], a[1], a[2], a[3]]))
-            .collect();
+    if let Some(session) = get_session(&session_id).await {
+        if let Some(ref _transcription_sender_tx) = session.transcription_sender_tx {
+            let mut v: Vec<f32> = data
+                .chunks_exact(4)
+                .map(|a| f32::from_le_bytes([a[0], a[1], a[2], a[3]]))
+                .collect();
 
-        mutate_session(&session_id, |session| session.buffer.append(&mut v)).await;
+            mutate_session(&session_id, |session| session.buffer.append(&mut v)).await;
 
-        if let Some(pivot) = translate::find_silence(&session.buffer, session.sample_rate) {
-            log::debug!(
-                "Comparing {} to {}",
-                pivot,
-                crate::translate::SEND_SAMPLE_MINIMUM_TIME_SECONDS * session.sample_rate as usize
-            );
-            let silence_length = if pivot
-                == crate::translate::SEND_SAMPLE_MINIMUM_TIME_SECONDS * session.sample_rate as usize
-            {
-                log::debug!("Silent for {} samples.", session.silence_length);
-                session.silence_length + pivot
-            } else {
-                0
-            };
+            if let Some(pivot) = translate::find_silence(&session.buffer, session.sample_rate) {
+                log::debug!(
+                    "Comparing {} to {}",
+                    pivot,
+                    crate::translate::SEND_SAMPLE_MINIMUM_TIME_SECONDS
+                        * session.sample_rate as usize
+                );
+                let silence_length = if pivot
+                    == crate::translate::SEND_SAMPLE_MINIMUM_TIME_SECONDS
+                        * session.sample_rate as usize
+                {
+                    log::debug!("Silent for {} samples.", session.silence_length);
+                    session.silence_length + pivot
+                } else {
+                    0
+                };
 
-            log::debug!("Sending to translate, pivot={}", pivot);
-            let sequence_number = session.sequence_number;
-            let payload = session.buffer[..pivot].to_vec();
-            let lang = session.language.clone();
-            persist_session_data(&session, pivot)?;
-            let result = queue::get_queue().enqueue(translate::TranslationRequest {
-                session_id,
-                sequence_number,
-                payload,
-                lang,
-            });
-            match result {
-                Ok(_) => {
-                    drop(result);
-                    mutate_session(&session_id, |session| {
-                        session.silence_length = silence_length;
-                        session.buffer = session.buffer[pivot..].to_vec();
-                        session.sequence_number += 1;
-                    })
-                    .await;
-                }
-                Err(_) => {
-                    drop(result);
-                    mutate_session(&session_id, |session| {
-                        session.transcription_sender_tx = None;
-                        session.valid = false;
-                    })
-                    .await;
+                log::debug!("Sending to translate, pivot={}", pivot);
+                let sequence_number = session.sequence_number;
+                let payload = session.buffer[..pivot].to_vec();
+                let lang = session.language.clone();
+                persist_session_data(&session, pivot)?;
+                let result = queue::get_queue().enqueue(translate::TranslationRequest {
+                    session_id,
+                    sequence_number,
+                    payload,
+                    lang,
+                });
+                match result {
+                    Ok(_) => {
+                        drop(result);
+                        mutate_session(&session_id, |session| {
+                            session.silence_length = silence_length;
+                            session.buffer = session.buffer[pivot..].to_vec();
+                            session.sequence_number += 1;
+                        })
+                        .await;
+                    }
+                    Err(_) => {
+                        drop(result);
+                        mutate_session(&session_id, |session| {
+                            session.transcription_sender_tx = None;
+                            session.valid = false;
+                        })
+                        .await;
+                    }
                 }
             }
         }
@@ -412,35 +417,30 @@ pub async fn user_connected(
     session.send_uuid().unwrap();
     set_session(session_id, session).await;
 
-    loop {
-        if let Ok(Some(result)) =
-            timeout(Duration::from_secs(RECV_TIMEOUT_SECONDS), user_ws_rx.next()).await
-        {
-            let msg = match result {
-                Ok(msg) => msg,
-                Err(e) => {
-                    log::debug!("websocket error(uid={}): {}", session_id, e);
-                    break;
-                }
-            };
+    while let Ok(Some(result)) =
+        timeout(Duration::from_secs(RECV_TIMEOUT_SECONDS), user_ws_rx.next()).await
+    {
+        let msg = match result {
+            Ok(msg) => msg,
+            Err(e) => {
+                log::debug!("websocket error(uid={}): {}", session_id, e);
+                break;
+            }
+        };
 
-            let session = get_session(&session_id).await;
-            match session {
-                Some(s) => {
-                    if !s.valid && s.get_translation_count().unwrap() == s.last_sequence.unwrap() {
-                        break;
-                    }
-                }
-                None => {
-                    log::warn!("Error getting session {}, bailing", session_id);
+        let session = get_session(&session_id).await;
+        match session {
+            Some(s) => {
+                if !s.valid && s.get_translation_count().unwrap() == s.last_sequence.unwrap() {
                     break;
                 }
             }
-            let _ = user_message(session_id, msg).await;
-        } else {
-            // timed out or error receiving
-            break;
+            None => {
+                log::warn!("Error getting session {}, bailing", session_id);
+                break;
+            }
         }
+        let _ = user_message(session_id, msg).await;
     }
     log::debug!("Marking session {} for closure", session_id);
     mark_session_for_closure(session_id).await;
