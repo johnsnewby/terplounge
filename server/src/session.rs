@@ -255,7 +255,7 @@ pub fn process_transcription(session_id: usize, response: &TranslationResponse) 
 }
 
 pub async fn get_session(id: &usize) -> Option<SessionData> {
-    SESSIONS.write().await.get(id).cloned()
+    SESSIONS.read().await.get(id).cloned()
 }
 
 pub async fn get_sessions() -> Option<Vec<SessionData>> {
@@ -265,7 +265,7 @@ pub async fn get_sessions() -> Option<Vec<SessionData>> {
 pub fn get_session_sync(id: &usize) -> Option<SessionData> {
     let mut session: Option<SessionData> = None;
     SYNC_BRIDGE_RUNTIME.block_on(async {
-        session = SESSIONS.write().await.get(id).cloned();
+        session = SESSIONS.read().await.get(id).cloned();
     });
     session
 }
@@ -351,6 +351,7 @@ pub async fn user_message(session_id: usize, msg: Message) -> E<()> {
                     payload,
                     lang,
                 });
+
                 match result {
                     Ok(_) => {
                         drop(result);
@@ -454,22 +455,51 @@ pub async fn mark_session_for_closure_uuid(uuid: String) {
     }
 }
 
+/**
+There will be no more audio coming in. So:
+- if the session was never used, just close the sender and return
+- send the rest of the buffered audio for translation
+- set session.last_sequence to session.sequence_number
+- increment session.sequence_number, in case one day we do restartable sessions
+*/
 pub async fn mark_session_for_closure(session_id: usize) {
     let session = get_session(&session_id).await.unwrap();
     if session.sequence_number == 0 {
+        // session was never used.
         mutate_session(&session_id, |session| {
             session.transcription_sender_tx = None;
         })
         .await;
         return;
     }
-    let last_sequence = session.sequence_number - 1;
+    let payload = session.buffer.to_vec();
+    let lang = session.language.clone();
+    match persist_session_data(&session, payload.len()) {
+        Ok(_) => (),
+        Err(e) => log::error!("Couldn't persist session data: {:?}", e),
+    };
+    log::debug!(
+        "Sending last {} samples to translate for session {}",
+        session.buffer.len(),
+        session_id
+    );
+    match queue::get_queue().enqueue(translate::TranslationRequest {
+        session_id,
+        sequence_number: session.sequence_number,
+        payload,
+        lang,
+    }) {
+        Ok(_) => (),
+        Err(e) => log::error!("Error enqueuing final audio: {:?}", e),
+    };
+    let last_sequence = session.sequence_number;
     log::debug!(
         "Found session {}, marking it for closure at sequence number {}",
         session_id,
         last_sequence,
     );
     mutate_session(&session_id, |session| {
+        session.sequence_number = last_sequence + 1;
         session.last_sequence = Some(last_sequence)
     })
     .await;
@@ -485,7 +515,7 @@ pub async fn expire_sessions() -> E<()> {
     Ok(())
 }
 
-fn persist_session_data(session: &SessionData, pivot: usize) -> E<()> {
+fn persist_session_data(session: &SessionData, length: usize) -> E<()> {
     if let Some(filename) = &session.recording_file {
         let spec = hound::WavSpec {
             channels: 1,
@@ -499,7 +529,7 @@ fn persist_session_data(session: &SessionData, pivot: usize) -> E<()> {
         } else {
             hound::WavWriter::create(filename, spec)?
         };
-        for sample in &session.buffer[..pivot] {
+        for sample in &session.buffer[..length] {
             writer.write_sample(*sample).unwrap();
         }
     }

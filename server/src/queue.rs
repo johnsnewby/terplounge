@@ -43,19 +43,22 @@ impl TranslationQueue {
     pub fn subscribe<T: Translator>(&mut self, translator: &T) -> E<()> {
         while let Some(receiver) = &self.receiver {
             let req = receiver.recv()?;
-	    let session_id = req.session_id;
+            let session_id = req.session_id;
             log::debug!("Queue length: {}", receiver.len());
             if let Some(session) = crate::session::get_session_sync(&session_id) {
-		if session.valid
-		{
+                if session.valid {
+                    log::debug!(
+                        "Sending job from session {} to translate, sequence_number is {}.",
+                        session_id,
+                        session.sequence_number
+                    );
                     translator.translate(req)?;
-		}		else {
-                log::debug!("Skipping no longer valid session {}", session_id);
-		}
-
+                } else {
+                    log::debug!("Skipping no longer valid session {}", session_id);
+                }
             }
-	    log::warn!("Couldn't load session with id {}", &session_id);
-	}
+            log::warn!("Couldn't load session with id {}", &session_id);
+        }
         log::debug!("Receiver closed.");
         Ok(())
     }
