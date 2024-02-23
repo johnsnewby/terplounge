@@ -499,8 +499,9 @@ pub async fn mark_session_for_closure(session_id: usize) {
         last_sequence,
     );
     mutate_session(&session_id, |session| {
+        session.buffer = vec![];
+        session.last_sequence = Some(last_sequence);
         session.sequence_number = last_sequence + 1;
-        session.last_sequence = Some(last_sequence)
     })
     .await;
 }
