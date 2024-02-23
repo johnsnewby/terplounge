@@ -97,13 +97,6 @@ h1 {
     
 }
 
-.logo {
-    width: 5vw;
-    height:  5vw;
-    object-fit: contain;
-    z-index: -1;
-}
-
 #download {
   display: none;
 }
