@@ -192,8 +192,8 @@ h2 {
     display: visible;
     border-style: solid;
     border-color: black;
-    border-width: 0.5vh;
-    border-radius: 0.25vh;
+    border-width: 1vh;
+    border-radius: 1.25vh;
     padding: 2vh 2vw 2vh 2vw;
     width: 88w;
     height: 45vh;
@@ -207,6 +207,10 @@ h2 {
     padding: 2vh 2vw 2vh 2vw;
     margin: 2vh 2vw 2vh 2vw;
 
+    border-style: solid;
+    border-color: black;
+    border-width: 1vh;
+    border-radius: 1.25vh;
     width: 88w;
     height: 50vh;
     bottom: 4vh;
