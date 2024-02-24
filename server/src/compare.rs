@@ -1,25 +1,10 @@
 use crate::error::{Er, E};
 use crate::metadata::Metadata;
 use crate::session::find_session_with_uuid;
-use askama::Template; // bring trait in scope
 use serde::Serialize;
 use serde_json::json;
 use similar::{ChangeTag, TextDiff};
 use std::fs;
-
-fn escape(from: String) -> String {
-    from.replace('\'', "\\'")
-        .replace('\n', "\\\n")
-        .replace('\"', "\\\"")
-}
-
-#[derive(Template)]
-#[template(path = "compare.html", escape = "none")]
-pub struct Comparison {
-    resource: String,
-    uuid: String,
-    lang: String,
-}
 
 fn get_translation(resource_path: &String, lang: &String) -> E<String> {
     let metadata = Metadata::from_resource_path(resource_path)?;
@@ -32,7 +17,13 @@ fn get_translation(resource_path: &String, lang: &String) -> E<String> {
     Ok(source)
 }
 
-async fn get_comparison(resource_path: &str, uuid: &str, lang: &str) -> E<Comparison> {
+pub struct Comparison {
+    pub resource: String,
+    pub uuid: String,
+    pub lang: String,
+}
+
+pub async fn get_comparison(resource_path: &str, uuid: &str, lang: &str) -> E<Comparison> {
     Ok(Comparison {
         resource: resource_path.to_string(),
         uuid: uuid.to_owned(),
@@ -75,19 +66,4 @@ pub async fn changes(resource_path: String, uuid: String, lang: String) -> E<Vec
         .collect();
     log::trace!("Changes: {}", json!(changes).to_string());
     Ok(changes)
-}
-
-pub async fn compare(
-    resource_path: String,
-    uuid: String,
-    lang: String,
-) -> std::result::Result<impl warp::Reply, warp::Rejection> {
-    let template = match get_comparison(&resource_path, &uuid, &lang).await {
-        Ok(c) => c,
-        Err(e) => {
-            log::error!("Couldn't get transcript for uuid {}: {:?}", uuid, e);
-            return Err(warp::reject::reject());
-        }
-    };
-    Ok(warp::reply::html(template.render().unwrap()))
 }

@@ -12,16 +12,10 @@
         <div class="message">
           <h1>{{ metadata.name}}</h1>
           <p>
-            Practising translating {{ metadata.name }} from {{ metadata.native
-            }} to {{ lang }}
-          </p>
-        </div>
-      </div>
       <div class="controlpanel">
         <label for="inputSource" onchange="stopTranscription">Microphone</label>
         <select name="inputSource" id="inputSource"></select>
-        <div id="status" name="status">Connecting</div>
-        <button id="start" onclick="go()">Start</button>
+        <button id="start" class="terplounge-font" onclick="go()">Start</button>
       </div>
       <div id="player-container" class="player-container">
         <video width="80%" height="80%" id="player">
@@ -34,6 +28,9 @@
         >When you are done, click here</a
       > -->
     </div>
+          </p>
+        </div>
+      </div>
     <input type="hidden" id="lang" name="lang" value="{{lang}}" />
     <script>
       var lang = "{{lang}}";

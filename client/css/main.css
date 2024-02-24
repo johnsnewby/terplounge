@@ -47,10 +47,20 @@ body {
 
 h1 {
     font-family: 'TerploungeBody';
+    font-size: 24pt;
+}
+
+h2 {
+    font-family: 'TerploungeBody';
     font-size: 20pt;
 }
 
-.terplounge-font {
+.important {
+    font-family: 'TerploungeBody';
+    font-size: 20pt;
+}
+
+.terplounge-font select option {
     font-family: 'TerploungeBody';
     color: black;
 }
@@ -58,7 +68,7 @@ h1 {
 .container {
     height: 90vh;
     width: 93vw;
-    margin: 2vh 2vh 1vh 1vh;
+    margin: 2vh 2vw 2vh 2vw;
     border-style: solid;
     border-color: orange;
     border-width: 2vh;
@@ -66,6 +76,11 @@ h1 {
     padding: 1vh;
     display: flex;
     flex-flow: column;
+}
+
+.logo a {
+    color: black;
+    text-decoration: none;
 }
 
 .container .logo {
@@ -97,7 +112,11 @@ h1 {
 
 .message {
     width: 80vw;
-
+    height: 85vh;
+    overflow: scroll;
+    overflow-y: auto;
+    overflow-x: clip;
+    flex: 1 1 auto;
 }
 
 #download {
@@ -113,6 +132,7 @@ h1 {
   height: 80vh;
   margin: auto;
   display: none;
+
 }
 
 .control-icon-container {
@@ -168,43 +188,46 @@ h1 {
 
 .content {
     border: solid;
-    background-color:#d3d3d3;
-    font-family: Garamond;
+    font-family: Nunito;
     display: visible;
     border-style: solid;
     border-color: black;
-    border-width: 1px;
+    border-width: 0.5vh;
+    border-radius: 0.25vh;
     padding: 2vh 2vw 2vh 2vw;
     width: 88w;
-    height: 60vh;
+    height: 45vh;
     bottom: 4vh;
     overflow: scroll;
-    scroll-y: auto;
+    overflow-y: auto;
     flex: 1 1 auto;
 }
 
 .player-container {
     padding: 2vh 2vw 2vh 2vw;
-    border-style: solid;
-    border-color: black;
-    border-width: 2vh;
-    border-radius: 2vh;
-    padding: 2vh 2vw 2vh 2vw;
+    margin: 2vh 2vw 2vh 2vw;
+
     width: 88w;
-    height: 60vh;
+    height: 50vh;
     bottom: 4vh;
 }
 
 .compare-container {
     display: flex;
     overflow: scroll;
-    scroll-y: auto;
-    background-color:#d3d3d3;
+    overflow-y: auto;
+    height: 55vh;
+    width: 85vw;
+    border-style: solid;
+    border-color: black;
+    border-width: 0.5vh;
+    border-radius: 0.25vh;
+    padding: 0.5vh 0.5vw 0.5vh 0.5vw;
+    margin: 0.5vh 0.5vw 0.5vh 0.5vw;
 }
 
 .compare-text {
-    background-color:#d3d3d3;
-    font-family: Garamond;
+    font-family: Nunito;
 }
 
 .compare-left {

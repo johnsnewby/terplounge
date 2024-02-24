@@ -59,7 +59,7 @@ pub struct SessionData {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Deserialize)]
 struct SavedSessionData {
     pub language: String,
     pub uuid: Uuid,
@@ -557,47 +557,47 @@ pub async fn restore_sessions() -> E<()> {
                 }
             }
         }
+        let mut next_id: usize = 0;
+        let mut get_id = move || {
+            let id = next_id;
+            next_id += 1;
+            id
+        };
+        let restored_sessions: Vec<SessionData> = saved_sessions
+            .iter()
+            .map(|s| SessionData {
+                id: get_id(),
+                transcription_sender_tx: None,
+                language: s.language.clone(),
+                uuid: s.uuid,
+                resource: s.resource.clone(),
+                sample_rate: s.sample_rate,
+                valid: false,
+                buffer: vec![],
+                silence_length: 0,
+                sequence_number: 1,
+                last_sequence: Some(1),
+                recording: false,
+                recording_file: Some(format!("{}/{}/{}.wav", dir, s.uuid, s.uuid)),
+                transcript_file: Some(format!("{}/{}/{}.txt", dir, s.uuid, s.uuid)),
+                translations: Arc::new(Mutex::new(TranslationResponses::new_from_string(
+                    match &s.transcript {
+                        Some(s) => s.clone(),
+                        None => "transcript not found! This is probably a bug.".to_string(),
+                    },
+                    s.uuid.to_string(),
+                ))),
+                updated_at: s.updated_at,
+                created_at: s.created_at,
+            })
+            .collect();
+        for restored_session in restored_sessions {
+            SESSIONS
+                .write()
+                .await
+                .insert(restored_session.id, restored_session);
+        }
+        NEXT_USER_ID.store(get_id(), Ordering::Relaxed);
     }
-    let mut next_id: usize = 0;
-    let mut get_id = move || {
-        let id = next_id;
-        next_id += 1;
-        id
-    };
-    let restored_sessions: Vec<SessionData> = saved_sessions
-        .iter()
-        .map(|s| SessionData {
-            id: get_id(),
-            transcription_sender_tx: None,
-            language: s.language.clone(),
-            uuid: s.uuid,
-            resource: s.resource.clone(),
-            sample_rate: s.sample_rate,
-            valid: false,
-            buffer: vec![],
-            silence_length: 0,
-            sequence_number: s.sequence_number,
-            last_sequence: Some(s.sequence_number),
-            recording: false,
-            recording_file: None,
-            transcript_file: None,
-            translations: Arc::new(Mutex::new(TranslationResponses::new_from_string(
-                match &s.transcript {
-                    Some(s) => s.clone(),
-                    None => "transcript not found! This is probably a bug.".to_string(),
-                },
-                s.uuid.to_string(),
-            ))),
-            updated_at: s.updated_at,
-            created_at: s.created_at,
-        })
-        .collect();
-    for restored_session in restored_sessions {
-        SESSIONS
-            .write()
-            .await
-            .insert(restored_session.id, restored_session);
-    }
-    NEXT_USER_ID.store(get_id(), Ordering::Relaxed);
     Ok(())
 }

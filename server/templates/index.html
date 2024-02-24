@@ -6,23 +6,29 @@
   </head>
   <body>
     <div class="container">
-      <div class="logo">Terplounge</div>
+	<div class="logo"><a href="/">Terplounge</a></div>
       <div class="header">
-        <div class="message">
-	  Welcome to <span class="terplounge-font">Terplounge</span>, which enables simultaneous interpreters to practise alone, using resources supplied by professional colleagues, or using examples from real life.
+          <div class="message">
+	      <h1>About</h1>
+	    Welcome to <span class="terplounge-font">Terplounge</span>, which enables simultaneous interpreters to practise alone, using resources supplied by professional colleagues, or using examples from real life.
+	    <p/>
+	    Please note that this is intended as a demonstration of the capabilities of the core service, and does not have features one would expect in a finished project, such as login and security. Apologies to mobile users&em;our user base works from laptop or desktop machines, so we've prioritized those for the time being.
           <h1>Actions</h1>
-          <a href="/choose.html">Practise</a>
+          <a href="/choose.html" class="important">Practise</a>&nbsp;use this link to select a source to work with, and a language to translate to.
           <p/>
-          <a href="/transcribe.html">Transcribe</a>
+          <a href="/transcribe.html" class="important">Transcribe</a> and this one to make your own transcripts and recordings so you can contribute to this project
           <p />
-          <h1>Sessions</h1>
+          <h1>Past users</h1>
+	  Here you will see previous sessions which have been done by you or other users. Please note that your recordings, transcripts and comparisons will also be here! Security is intended to be addressed at a higher level in the stack.
           <ul>
             {% for session in sessions %}
-            <li>
-              {{session.id }} {{ session.uuid }} {{ session.created_at }}
-              <a href="/transcript/{{session.uuid}}">Transcript</a>
-              <a href="/recordings/{{session.uuid}}.wav">Recording</a>
-	      {% if ! session.resource.is_none() %}<a href="/compare/{{session.resource.clone().unwrap()}}/{{session.uuid}}/de">Compare (2, de)</a>{% endif %}
+              <li>
+		  | {{session.id }}
+		  <!-- -		  {{ session.uuid }} | -->
+		  | {{ session.created_at }}
+		  {% if ! session.transcript_file.is_none() %}| <a href="/transcript/{{session.uuid}}">view transcript</a>{% endif %}
+		  {% if ! session.recording_file.is_none() %}| <a href="/recording/{{session.uuid}}">download recording</a>{% endif %}
+		  {% if ! session.resource.is_none() %}| <a href="/compare/{{session.resource.clone().unwrap()}}/{{session.uuid}}/de">compare to reference</a>{% endif %} |
             </li>
             {% endfor %}
           </ul>

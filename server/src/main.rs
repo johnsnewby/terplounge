@@ -24,7 +24,7 @@ async fn main() {
 
     env_logger::init();
 
-    let (translate_tx, translate_rx) = unbounded();
+    let (_translate_tx, translate_rx) = unbounded();
     log::debug!("Making transcription pool");
     whispercpp::start_translate_pool().unwrap();
     log::debug!("Made WhisperCpp pool");

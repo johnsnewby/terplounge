@@ -1,10 +1,7 @@
-use askama::Template; // bring trait in scope
-
 use crate::metadata::Metadata;
 use crate::session::{get_sessions, mark_session_for_closure_uuid, user_connected, SessionData};
-use crate::translate;
+use askama::Template; // bring trait in scope
 use bytes::Bytes;
-use crossbeam_channel::Sender;
 use rust_embed::RustEmbed;
 use std::collections::HashMap;
 use std::io::Read;
@@ -58,6 +55,56 @@ pub async fn practice(
 
     Ok(warp::reply::html(template.render().unwrap()))
 }
+
+#[derive(Template)]
+#[template(path = "compare.html", escape = "none")]
+pub struct Comparison {
+    resource: String,
+    uuid: String,
+    lang: String,
+}
+
+pub async fn compare(
+    resource_path: String,
+    uuid: String,
+    lang: String,
+) -> std::result::Result<impl warp::Reply, warp::Rejection> {
+    let template = match crate::compare::get_comparison(&resource_path, &uuid, &lang).await {
+        Ok(c) => Comparison {
+            resource: c.resource,
+            uuid: c.uuid,
+            lang: c.lang,
+        },
+        Err(e) => {
+            log::error!("Couldn't get transcript for uuid {}: {:?}", uuid, e);
+            return Err(warp::reject::reject());
+        }
+    };
+    Ok(warp::reply::html(template.render().unwrap()))
+}
+
+pub async fn download_audio(
+    uuid: String,
+) -> std::result::Result<impl warp::Reply, warp::Rejection> {
+    let session_id = crate::session::find_session_with_uuid(&uuid).await.unwrap();
+    let session = crate::session::get_session(&session_id).await.unwrap();
+    let content_path = session.recording_file.unwrap();
+    log::debug!("content_path is {}", content_path);
+    let mut f = std::fs::File::open(content_path.clone()).unwrap();
+    let metadata = std::fs::metadata(&content_path).expect("unable to read metadata");
+    let mut buffer = vec![0; metadata.len() as usize];
+    let _ = f.read(&mut buffer).expect("buffer overflow");
+    let b: Bytes = Bytes::from(buffer);
+    let response = match Response::builder().body(b) {
+        Ok(b) => b,
+        Err(e) => {
+            log::error!("Error making response: {:?}", e);
+            return Err(warp::reject::not_found());
+        }
+    };
+    Ok(response)
+}
+
 pub async fn serve_resource(
     resource_path: String,
 ) -> std::result::Result<impl warp::Reply, warp::Rejection> {
@@ -131,7 +178,7 @@ pub async fn serve() {
     let compare = warp::get()
         .and(warp::path!("compare" / String / String / String))
         .and_then(|asset_id, uuid, lang| async move {
-            match crate::compare::compare(asset_id, uuid, lang).await {
+            match compare(asset_id, uuid, lang).await {
                 Ok(x) => Ok(x),
                 Err(e) => {
                     log::error!("Error in compare: {:?}", e);
@@ -156,11 +203,9 @@ pub async fn serve() {
             }
         });
 
-    let recordings_dir = std::env::var("RECORDINGS_DIR").unwrap_or("../recordings".to_string());
-
-    let recordings = warp::get()
-        .and(warp::path("recordings"))
-        .and(warp::fs::dir(recordings_dir));
+    let recording = warp::get()
+        .and(warp::path!("recording" / String))
+        .and_then(|uuid| async { download_audio(uuid).await });
 
     let assets_dir = std::env::var("ASSETS_DIR").unwrap_or("../assets".to_string());
     let assets = warp::get()
@@ -191,7 +236,7 @@ pub async fn serve() {
         .or(close)
         .or(compare)
         .or(practice)
-        .or(recordings)
+        .or(recording)
         .or(serve_resource)
         .or(status)
         .or(static_content_serve)
