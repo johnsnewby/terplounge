@@ -36,7 +36,7 @@
 }
 
 body {
-    color: black;    
+    color: black;
     font-family: 'Nunito';
     background-color: #fffafa;
     font-size: 14pt;
@@ -47,7 +47,12 @@ body {
 
 h1 {
     font-family: 'TerploungeBody';
-    font-size: 16pt;
+    font-size: 20pt;
+}
+
+.terplounge-font {
+    font-family: 'TerploungeBody';
+    color: black;
 }
 
 .container {
@@ -71,7 +76,7 @@ h1 {
     font-size: 50pt;
     z-index: 10;
     color:black;
-}    
+}
 
 .logo-img {
     opacity: 0.3;
@@ -92,7 +97,7 @@ h1 {
 
 .message {
     width: 80vw;
-    
+
 }
 
 #download {
@@ -120,7 +125,7 @@ h1 {
     margin-right: 2vw;
     display: flex;
     flex-direction: row;
-    float: right;    
+    float: right;
 }
 
 #progress-bar {
@@ -180,6 +185,11 @@ h1 {
 
 .player-container {
     padding: 2vh 2vw 2vh 2vw;
+    border-style: solid;
+    border-color: black;
+    border-width: 2vh;
+    border-radius: 2vh;
+    padding: 2vh 2vw 2vh 2vw;
     width: 88w;
     height: 60vh;
     bottom: 4vh;
@@ -195,7 +205,7 @@ h1 {
 .compare-text {
     background-color:#d3d3d3;
     font-family: Garamond;
-}    
+}
 
 .compare-left {
     flex: 1;
@@ -220,10 +230,10 @@ h1 {
     font-weight: bold;
     color: red;
 }
-    
+
 @media screen and (max-height: 450 px) {
     body {
-        color: black;    
+        color: black;
         font-family: 'Nunito';
         background-color: #177886;
         font-size: 18pt;
@@ -231,10 +241,8 @@ h1 {
         height: 100%;
         overflow: hidden;
     }
-    
+
     h1 {
         font-size: 18pt;
     }
 }
-
-    

@@ -31,11 +31,9 @@ static NEXT_USER_ID: AtomicUsize = AtomicUsize::new(1);
 #[derive(Clone, Debug, Serialize)]
 pub struct SessionData {
     #[serde(skip_serializing)]
-    id: usize,
+    pub id: usize,
     #[serde(skip_serializing)]
     pub transcription_sender_tx: Option<Sender<Message>>,
-    #[serde(skip_serializing)]
-    pub translator: Sender<translate::TranslationRequest>,
     pub language: String,
     pub uuid: Uuid,
     pub resource: Option<String>,
@@ -67,13 +65,10 @@ struct SavedSessionData {
     pub uuid: Uuid,
     pub resource: Option<String>,
     pub sample_rate: u32,
-    pub valid: bool,
-    pub silence_length: usize,
     pub sequence_number: usize,
-    pub last_sequence: Option<usize>,
-    pub recording: bool,
     pub updated_at: DateTime<Utc>,
     pub created_at: DateTime<Utc>,
+    pub transcript: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -90,7 +85,6 @@ impl SessionData {
     fn new(
         id: usize,
         transcription_sender_tx: Sender<Message>,
-        translator: Sender<translate::TranslationRequest>,
         language: String,
         sample_rate: u32,
         resource: Option<String>,
@@ -113,7 +107,6 @@ impl SessionData {
         Self {
             id,
             transcription_sender_tx: Some(transcription_sender_tx),
-            translator,
             language,
             sample_rate,
             silence_length: 0usize,
@@ -383,7 +376,6 @@ pub async fn user_message(session_id: usize, msg: Message) -> E<()> {
 
 pub async fn user_connected(
     ws: WebSocket,
-    translate_tx: Sender<translate::TranslationRequest>,
     lang: String,
     sample_rate: u32,
     resource: Option<String>,
@@ -413,7 +405,6 @@ pub async fn user_connected(
     let mut session = SessionData::new(
         session_id,
         transcription_send_tx,
-        translate_tx,
         lang,
         sample_rate,
         resource,
@@ -542,8 +533,8 @@ fn persist_session_data(session: &SessionData, length: usize) -> E<()> {
     Ok(())
 }
 
-fn restore_sessions() -> E<Vec<SavedSessionData>> {
-    let mut sessions: Vec<SavedSessionData> = vec![];
+pub async fn restore_sessions() -> E<()> {
+    let mut saved_sessions: Vec<SavedSessionData> = vec![];
     if let Ok(dir) = std::env::var("RECORDINGS_DIR") {
         for entry in std::fs::read_dir(dir.clone())? {
             let entry = entry?;
@@ -553,11 +544,60 @@ fn restore_sessions() -> E<Vec<SavedSessionData>> {
                     dir,
                     entry.file_name().to_str().expect("Could not get filename!")
                 )) {
-                    let saved: SavedSessionData = serde_json::from_str(&contents)?;
-                    sessions.push(saved);
+                    let mut saved: SavedSessionData = serde_json::from_str(&contents)?;
+                    if let Ok(transcript) = std::fs::read_to_string(format!(
+                        "{}/{}/{}.txt",
+                        dir,
+                        entry.file_name().to_str().expect("Could not get filename!"),
+                        saved.uuid
+                    )) {
+                        saved.transcript = Some(transcript);
+                    }
+                    saved_sessions.push(saved);
                 }
             }
         }
     }
-    Ok(sessions)
+    let mut next_id: usize = 0;
+    let mut get_id = move || {
+        let id = next_id;
+        next_id += 1;
+        id
+    };
+    let restored_sessions: Vec<SessionData> = saved_sessions
+        .iter()
+        .map(|s| SessionData {
+            id: get_id(),
+            transcription_sender_tx: None,
+            language: s.language.clone(),
+            uuid: s.uuid,
+            resource: s.resource.clone(),
+            sample_rate: s.sample_rate,
+            valid: false,
+            buffer: vec![],
+            silence_length: 0,
+            sequence_number: s.sequence_number,
+            last_sequence: Some(s.sequence_number),
+            recording: false,
+            recording_file: None,
+            transcript_file: None,
+            translations: Arc::new(Mutex::new(TranslationResponses::new_from_string(
+                match &s.transcript {
+                    Some(s) => s.clone(),
+                    None => "transcript not found! This is probably a bug.".to_string(),
+                },
+                s.uuid.to_string(),
+            ))),
+            updated_at: s.updated_at,
+            created_at: s.created_at,
+        })
+        .collect();
+    for restored_session in restored_sessions {
+        SESSIONS
+            .write()
+            .await
+            .insert(restored_session.id, restored_session);
+    }
+    NEXT_USER_ID.store(get_id(), Ordering::Relaxed);
+    Ok(())
 }

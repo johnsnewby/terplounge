@@ -21,14 +21,6 @@ pub struct Comparison {
     lang: String,
 }
 
-#[derive(Template)]
-#[template(path = "practice.html", escape = "none")]
-pub struct PracticeData {
-    metadata: Metadata,
-    resource_path: String,
-    lang: String,
-}
-
 fn get_translation(resource_path: &String, lang: &String) -> E<String> {
     let metadata = Metadata::from_resource_path(resource_path)?;
     let source_path = format!(
@@ -97,25 +89,5 @@ pub async fn compare(
             return Err(warp::reject::reject());
         }
     };
-    Ok(warp::reply::html(template.render().unwrap()))
-}
-
-pub async fn practice(
-    resource_path: String,
-    lang: String,
-) -> std::result::Result<impl warp::Reply, warp::Rejection> {
-    let metadata = match Metadata::from_resource_path(&resource_path) {
-        Ok(m) => m,
-        Err(e) => {
-            log::error!("Error: {:?}", e);
-            return Err(warp::reject::not_found());
-        }
-    };
-    let template = PracticeData {
-        metadata,
-        resource_path,
-        lang,
-    };
-
     Ok(warp::reply::html(template.render().unwrap()))
 }

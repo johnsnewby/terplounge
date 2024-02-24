@@ -9,7 +9,8 @@
       <div class="logo">Terplounge</div>
       <div class="header">
         <div class="message">
-          <h1>Index</h1>
+	  Welcome to <span class="terplounge-font">Terplounge</span>, which enables simultaneous interpreters to practise alone, using resources supplied by professional colleagues, or using examples from real life.
+          <h1>Actions</h1>
           <a href="/choose.html">Practise</a>
           <p/>
           <a href="/transcribe.html">Transcribe</a>
@@ -18,10 +19,10 @@
           <ul>
             {% for session in sessions %}
             <li>
-              {{ session.uuid }} {{ session.created_at }}
+              {{session.id }} {{ session.uuid }} {{ session.created_at }}
               <a href="/transcript/{{session.uuid}}">Transcript</a>
               <a href="/recordings/{{session.uuid}}.wav">Recording</a>
-              <a href="/compare/2/{{session.uuid}}/de">Compare (2, de)</a>
+	      {% if ! session.resource.is_none() %}<a href="/compare/{{session.resource.clone().unwrap()}}/{{session.uuid}}/de">Compare (2, de)</a>{% endif %}
             </li>
             {% endfor %}
           </ul>

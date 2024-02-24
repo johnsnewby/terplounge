@@ -42,6 +42,18 @@ impl TranslationResponses {
         Self(vec![])
     }
 
+    pub fn new_from_string(s: String, u: String) -> Self {
+        Self(vec![Some(vec![Some(TranslationResponse {
+            sequence_number: 0,
+            translation: s,
+            num_segments: 1,
+            segment_number: 0,
+            segment_start: 0,
+            segment_end: 1,
+            uuid: u,
+        })])])
+    }
+
     pub fn add_translation(&mut self, response: &TranslationResponse) -> E<()> {
         let sequence_number = response.sequence_number;
         let segment_number = response.segment_number as usize;

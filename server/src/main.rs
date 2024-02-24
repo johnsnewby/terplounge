@@ -41,8 +41,10 @@ async fn main() {
         });
         log::debug!("Started remote whisper process");
     }
+    log::info!("Restoring old sessions");
+    crate::session::restore_sessions().await.unwrap();
 
-    std::thread::spawn(move || async { queue::get_queue().queue_process(translate_rx).await});
+    std::thread::spawn(move || async { queue::get_queue().queue_process(translate_rx).await });
     log::debug!("Made enqueuing process");
-    serve(translate_tx).await;
+    serve().await;
 }
