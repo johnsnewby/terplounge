@@ -24,7 +24,7 @@ async fn main() {
 
     env_logger::init();
 
-    let (translate_tx, translate_rx) = unbounded();
+    let (_translate_tx, translate_rx) = unbounded();
     log::debug!("Making transcription pool");
     whispercpp::start_translate_pool().unwrap();
     log::debug!("Made WhisperCpp pool");
@@ -41,8 +41,10 @@ async fn main() {
         });
         log::debug!("Started remote whisper process");
     }
+    log::info!("Restoring old sessions");
+    crate::session::restore_sessions().await.unwrap();
 
-    std::thread::spawn(move || async { queue::get_queue().queue_process(translate_rx).await});
+    std::thread::spawn(move || async { queue::get_queue().queue_process(translate_rx).await });
     log::debug!("Made enqueuing process");
-    serve(translate_tx).await;
+    serve().await;
 }
