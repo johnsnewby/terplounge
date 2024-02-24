@@ -95,7 +95,9 @@ pub async fn download_audio(
     let mut buffer = vec![0; metadata.len() as usize];
     let _ = f.read(&mut buffer).expect("buffer overflow");
     let b: Bytes = Bytes::from(buffer);
-    let response = match Response::builder().body(b) {
+    let response = match Response::builder().header("Content-Disposition", format!("attachment; filename=\"{}.wav\"",
+                                                                                   uuid))
+    .body(b) {
         Ok(b) => b,
         Err(e) => {
             log::error!("Error making response: {:?}", e);
