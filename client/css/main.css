@@ -60,6 +60,10 @@ h2 {
     font-size: 20pt;
 }
 
+select option {
+    appearance: none;
+}
+
 .terplounge-font select option {
     font-family: 'TerploungeBody';
     color: black;
