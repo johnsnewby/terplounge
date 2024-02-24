@@ -144,7 +144,7 @@ function getWebSocketUri() {
   let resource = document.getElementById("resource").value;
   let sampleRate = getNativeSampleRate();
   let chat_path =
-    "/chat?lang=" + lang + "&rate=" + sampleRate + "&uuid=" + state.uuid;
+      "/chat?lang=" + lang + "&rate=" + sampleRate + "&uuid=" + state.uuid + "&resource=" + encodeURI(resource);
 
   let websocket_uri =
     window.location.protocol === "https:"
