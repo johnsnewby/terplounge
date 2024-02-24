@@ -116,7 +116,7 @@ select option {
 
 .message {
     width: 80vw;
-    height: 85vh;
+    height: 70vh;
     overflow: scroll;
     overflow-y: auto;
     overflow-x: clip;
