@@ -1,3 +1,4 @@
+use crate::error::E;
 use crate::metadata::Metadata;
 use crate::session::{get_sessions, mark_session_for_closure_uuid, user_connected, SessionData};
 use askama::Template; // bring trait in scope
@@ -8,6 +9,7 @@ use std::io::Read;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use warp::reply::Json;
 use warp::{http::Response, Filter};
+use warp_range::{filter_range, get_range};
 
 #[derive(Template)]
 #[template(path = "index.html", escape = "none")]
@@ -111,31 +113,17 @@ pub async fn download_audio(
     Ok(response)
 }
 
-pub async fn serve_resource(
-    resource_path: String,
-) -> std::result::Result<impl warp::Reply, warp::Rejection> {
+pub async fn get_resource_filename(resource_path: String) -> E<String> {
     let metadata = match Metadata::from_resource_path(&resource_path) {
         Ok(m) => m,
         Err(e) => {
             log::error!("Error: {:?} loading {}", e, resource_path);
-            return Err(warp::reject::not_found());
+            return Err(crate::error::Er::new(e.to_string()));
         }
     };
     let content_path = format!("{}/{}", metadata.enclosing_directory, metadata.audio);
     log::debug!("content_path is {}", content_path);
-    let mut f = std::fs::File::open(content_path.clone()).unwrap();
-    let metadata = std::fs::metadata(&content_path).expect("unable to read metadata");
-    let mut buffer = vec![0; metadata.len() as usize];
-    let _ = f.read(&mut buffer).expect("buffer overflow");
-    let b: Bytes = Bytes::from(buffer);
-    let response = match Response::builder().body(b) {
-        Ok(b) => b,
-        Err(e) => {
-            log::error!("Error making response: {:?}", e);
-            return Err(warp::reject::not_found());
-        }
-    };
-    Ok(response)
+    Ok(content_path)
 }
 
 pub async fn serve() {
@@ -166,7 +154,13 @@ pub async fn serve() {
 
     let serve_resource = warp::get().and(
         warp::path!("serve_resource" / String)
-            .and_then(|resource_path| async move { serve_resource(resource_path).await }),
+            .and(filter_range())
+            .and_then(|resource_path, range_header| async move {
+                let filename = get_resource_filename(resource_path).await.unwrap();
+                let mime_type = mime_guess::from_path(&filename).first().unwrap();
+                log::debug!("Found MIME type {}", mime_type.to_string());
+                get_range(range_header, &filename, &mime_type.to_string()).await
+            }),
     );
 
     let status = warp::path!("status" / String).and_then(|uuid| async move {
