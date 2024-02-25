@@ -24,7 +24,7 @@
             id="sourceLanguage"
             onChange="sourceUpdated()"
           >
-            <optionb style="font-family: TerploungeBody" class="terplounge-font" value="">Select a source language</option>
+            <option style="font-family: TerploungeBody" class="terplounge-font" value="">Select a source language</option>
           </select>
           <label for="lang">Target language</label>
           <select
@@ -33,7 +33,6 @@
             id="targetLanguage"
             onchange="targetUpdated()"
           >
-            <option value=""></option>
           </select>
         </div>
         <div id="content"></div>
@@ -115,6 +114,7 @@
       window.getSources = getSources;
       window.getCompatiblePracticeMaterials = getCompatiblePracticeMaterials;
       window.targetUpdated = targetUpdated;
+      sourceUpdated();
     </script>
   </body>
 </html>
