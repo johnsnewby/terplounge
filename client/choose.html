@@ -24,7 +24,6 @@
             id="sourceLanguage"
             onChange="sourceUpdated()"
           >
-            <option style="font-family: TerploungeBody" class="terplounge-font" value="">Select a source language</option>
           </select>
           <label for="lang">Target language</label>
           <select
@@ -64,8 +63,8 @@
 
       export const sourceUpdated = async () => {
         content.innerHTML = "";
-        while (targetLanguageSelector.options.length > 1) {
-          targetLanguageSelector.remove(1);
+        while (targetLanguageSelector.options.length) {
+          targetLanguageSelector.remove(0);
         }
         const lang =
           langageSelector.options[langageSelector.selectedIndex].value;
@@ -80,6 +79,7 @@
           option.text = getLanguageName(target);
           targetLanguageSelector.add(option);
         }
+	targetUpdated();
       };
 
       export const targetUpdated = async () => {
