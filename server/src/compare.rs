@@ -11,10 +11,12 @@ fn get_translation(resource_path: &String, lang: &String) -> E<String> {
     let source_path = format!(
         "{}/{}",
         metadata.enclosing_directory,
-        metadata.translations.get(lang).expect(&format!(
-            "Translation not found for resource {} and lang {}",
-            resource_path, lang
-        ))
+        metadata.translations.get(lang).unwrap_or_else(|| {
+            panic!(
+                "Translation not found for resource {} and lang {}",
+                resource_path, lang
+            );
+        })
     );
     let source = fs::read_to_string(source_path.clone())?;
     Ok(source)

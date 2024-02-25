@@ -158,8 +158,8 @@ pub async fn serve() {
             .and_then(|resource_path, range_header| async move {
                 let filename = get_resource_filename(resource_path).await.unwrap();
                 let mime_type = mime_guess::from_path(&filename).first().unwrap();
-                log::debug!("Found MIME type {}", mime_type.to_string());
-                get_range(range_header, &filename, &mime_type.to_string()).await
+                log::debug!("Found MIME type {}", mime_type.as_ref());
+                get_range(range_header, &filename, mime_type.as_ref()).await
             }),
     );
 
