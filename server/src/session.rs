@@ -65,7 +65,6 @@ struct SavedSessionData {
     pub uuid: Uuid,
     pub resource: Option<String>,
     pub sample_rate: u32,
-    pub sequence_number: usize,
     pub updated_at: DateTime<Utc>,
     pub created_at: DateTime<Utc>,
     pub transcript: Option<String>,
