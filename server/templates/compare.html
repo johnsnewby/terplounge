@@ -24,7 +24,8 @@
 	  </div>
 	</div>
       </div>
-        </div>
+    </div>
+    <div id="progress"></div>
     <script language="javascript" type="module">
       const getStatus = async () => {
         const json = await fetch("/status/{{uuid}}");
@@ -36,7 +37,7 @@
 
       const maybeUpdate = async () => {
         const status = await getStatus();
-        console.log(`got status: ${status}`);
+        console.log(`got status: ${JSON.stringify(status)}`);
         if (last_transcription_count === status.transcription_job_count) {
           return;
         }
@@ -62,12 +63,12 @@
         const diff = await json.json();
         const source = document.getElementById("source");
         let dest = document.getElementById("dest");
-        dest.innerHTML = "";
-        source.innerHTML = "";
+	let destText = "";
+	let sourceText = "";
         for (var change of diff) {
           while (change.content[0] === "\n") {
-            dest.innerHTML += "<br>";
-            source.innerHTML += "<br>";
+            destText += "<br>";
+            sourceText += "<br>";
             change.content = change.content.substring(1);
           }
           if (change.content === "") {
@@ -75,19 +76,22 @@
           }
           switch (change.change_type) {
             case "delete":
-              dest.innerHTML += `<span class="compare-delete">${change.content}</span>`;
+              destText += `<span class="compare-delete">${change.content}</span1>`;
               break;
             case "insert":
-              source.innerHTML += `<span class="compare-insert">${change.content}</span>`;
+              sourceText += `<span class="compare-insert">${change.content}</span>`;
               break;
             case "equal":
-              dest.innerHTML += change.content;
-              source.innerHTML += change.content;
+              destText += change.content;
+              sourceText += change.content;
               break;
             default:
               console.log("Weird diff " + JSON.stringify(diff));
-          }
-        }
+	  }
+	}
+          dest.innerHTML = destText;
+          source.innerHTML = sourceText;
+
       };
 
       await maybeUpdate();
