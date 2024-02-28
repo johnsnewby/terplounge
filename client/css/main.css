@@ -259,7 +259,7 @@ select option {
 
 .compare-delete {
     font-weight: bold;
-    color: red;
+    color: blue;
 }
 
 @media screen and (max-height: 450 px) {

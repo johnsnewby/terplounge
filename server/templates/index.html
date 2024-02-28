@@ -33,7 +33,7 @@ Enjoy practicing interpreting whenever you want, also spontaneously and ad-hoc. 
 		  | {{ session.created_at }}
 		  {% if ! session.transcript_file.is_none() %}| <a href="/transcript/{{session.uuid}}">view transcript</a>{% endif %}
 		  {% if ! session.recording_file.is_none() %}| <a href="/recording/{{session.uuid}}">download recording</a>{% endif %}
-		  {% if ! session.resource.is_none() %}| <a href="/compare/{{session.resource.clone().unwrap()}}/{{session.uuid}}/de">compare to reference</a>{% endif %} |
+		  {% if ! session.resource.is_none() %}| <a href="/compare/{{session.resource.clone().unwrap()}}/{{session.uuid}}/{{session.language}}">compare to reference</a>{% endif %} |
             </li>
             {% endfor %}
           </ul>
