@@ -141,10 +141,13 @@ function getNativeSampleRate() {
 
 function getWebSocketUri() {
   let lang = document.getElementById("lang").value;
-  let resource = document.getElementById("resource").value;
+  let resource = document.getElementById("resource")? document.getElementById("resource").value : undefined;
   let sampleRate = getNativeSampleRate();
   let chat_path =
-      "/chat?lang=" + lang + "&rate=" + sampleRate + "&uuid=" + state.uuid + "&resource=" + encodeURI(resource);
+      "/chat?lang=" + lang + "&rate=" + sampleRate + "&uuid=" + state.uuid;
+  if(resource) {
+    chat_path += "&resource=" + encodeURI(resource);
+  }
 
   let websocket_uri =
     window.location.protocol === "https:"
