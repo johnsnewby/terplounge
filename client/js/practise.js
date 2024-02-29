@@ -26,7 +26,6 @@ export const getLanguageName = (lang) => {
 
 export const getAllLanguages = async () => {
   const sources = await getSources();
-  console.log(sources);
   const languages = [
     ...new Set(sources.map((source) => source.metadata.native)),
   ];

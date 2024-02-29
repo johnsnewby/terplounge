@@ -23,6 +23,7 @@ impl Metadata {
         let f = std::fs::File::open(&filename)?;
         let reader = std::io::BufReader::new(f);
         let mut metadata: Self = serde_json::from_reader(reader)?;
+        log::debug!("metadata::from_filename: {:?}", metadata);
         metadata.enclosing_directory = Path::parent(Path::new(&filename))
             .unwrap()
             .to_str()

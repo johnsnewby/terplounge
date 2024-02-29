@@ -66,7 +66,8 @@
 	let destText = "";
 	let sourceText = "";
         for (var change of diff) {
-          while (change.content[0] === "\n") {
+            while (change.content[0] === '\n'
+	    || change.content[0] === '\r' ) {
             destText += "<br>";
             sourceText += "<br>";
             change.content = change.content.substring(1);

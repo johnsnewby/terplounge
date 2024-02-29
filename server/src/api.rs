@@ -7,6 +7,7 @@ use rust_embed::RustEmbed;
 use std::collections::HashMap;
 use std::io::Read;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use urlencoding::decode;
 use warp::reply::Json;
 use warp::{http::Response, Filter};
 use warp_range::{filter_range, get_range};
@@ -42,10 +43,14 @@ pub async fn practice(
     resource_path: String,
     lang: String,
 ) -> std::result::Result<impl warp::Reply, warp::Rejection> {
-    let metadata = match Metadata::from_resource_path(&resource_path) {
+    let metadata = match Metadata::from_resource_path(
+        &decode(&resource_path)
+            .expect("invalide URL encoding")
+            .into_owned(),
+    ) {
         Ok(m) => m,
         Err(e) => {
-            log::error!("Error: {:?}", e);
+            log::error!("Error in practise: {:?}", e);
             return Err(warp::reject::not_found());
         }
     };
@@ -117,7 +122,11 @@ pub async fn get_resource_filename(resource_path: String) -> E<String> {
     let metadata = match Metadata::from_resource_path(&resource_path) {
         Ok(m) => m,
         Err(e) => {
-            log::error!("Error: {:?} loading {}", e, resource_path);
+            log::error!(
+                "Error in get_resource_filename: {:?} loading {}",
+                e,
+                resource_path
+            );
             return Err(crate::error::Er::new(e.to_string()));
         }
     };
@@ -155,8 +164,14 @@ pub async fn serve() {
     let serve_resource = warp::get().and(
         warp::path!("serve_resource" / String)
             .and(filter_range())
-            .and_then(|resource_path, range_header| async move {
-                let filename = get_resource_filename(resource_path).await.unwrap();
+            .and_then(|resource_path: String, range_header| async move {
+                let filename = get_resource_filename(
+                    decode(&resource_path)
+                        .expect("Invalid source path in serve_resource")
+                        .into_owned(),
+                )
+                .await
+                .unwrap();
                 let mime_type = mime_guess::from_path(&filename).first().unwrap();
                 log::debug!("Found MIME type {}", mime_type.as_ref());
                 get_range(range_header, &filename, mime_type.as_ref()).await
@@ -177,8 +192,16 @@ pub async fn serve() {
 
     let compare = warp::get()
         .and(warp::path!("compare" / String / String / String))
-        .and_then(|asset_id, uuid, lang| async move {
-            match compare(asset_id, uuid, lang).await {
+        .and_then(|resource_path: String, uuid, lang| async move {
+            match compare(
+                decode(&resource_path)
+                    .expect("Invalid URL encoding in compare")
+                    .into_owned(),
+                uuid,
+                lang,
+            )
+            .await
+            {
                 Ok(x) => Ok(x),
                 Err(e) => {
                     log::error!("Error in compare: {:?}", e);
@@ -189,8 +212,8 @@ pub async fn serve() {
 
     let changes = warp::get()
         .and(warp::path!("changes" / String / String / String))
-        .and_then(|asset_id, uuid, lang| async move {
-            match crate::compare::changes(asset_id, uuid, lang).await {
+        .and_then(|resource_path: String, uuid, lang| async move {
+            match crate::compare::changes(decode(&resource_path).expect("Invlude URL encoding in changes").into_owned(), uuid, lang).await {
                 Ok(x) => {
                     let changes = x.clone();
                     let reply = warp::reply::json(&changes);
