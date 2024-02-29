@@ -44,8 +44,10 @@
       await populateMicrophones();
 
       const go = () => {
-        startPractice();
+	startPractice();
         player.play();
+	{% if metadata.skip > 0 %}player.currentTime = {{metadata.skip}};{% endif %}
+
         startButton.textContent = "When you're done speaking click here";
         startButton.onclick = () => {
           goToCompare("{{resource_path}}", "{{lang}}");

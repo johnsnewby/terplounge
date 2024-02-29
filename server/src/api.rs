@@ -50,7 +50,7 @@ pub async fn practice(
     ) {
         Ok(m) => m,
         Err(e) => {
-            log::error!("Error in practise: {:?}", e);
+            log::error!("Error loading metadata in practise: {:?}", e);
             return Err(warp::reject::not_found());
         }
     };

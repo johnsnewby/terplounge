@@ -10,6 +10,8 @@ pub struct Metadata {
     pub url: String,
     pub license: String,
     pub audio: String,
+    #[serde(default)]
+    pub skip: u32,
     pub native: String,
     pub transcript: Option<String>,
     pub translations: HashMap<String, String>,
