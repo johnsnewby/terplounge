@@ -26,6 +26,7 @@ export const getLanguageName = (lang) => {
 
 export const getAllLanguages = async () => {
   const sources = await getSources();
+  console.log(sources);
   const languages = [
     ...new Set(sources.map((source) => source.metadata.native)),
   ];
@@ -44,7 +45,7 @@ export const getTargetLanguagesForSourceLanguage = async (sourceLanguage) => {
   }
   return [...new Set(targetLanguages)];
 }
-    
+
 export async function populateSourceSelector() {
   const sources = await getSources();
   const source_selector = document.getElementById("source-selector");
@@ -98,6 +99,5 @@ export async function sourceChanged() {
     option.text = getLanguageName(option.value);
     langageSelector.add(option);
   }
-      
-}
 
+}

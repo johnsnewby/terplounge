@@ -3,4 +3,4 @@
 (setenv "RUST_LOG" "debug")
 (setenv "WHISPER_SERVER" nil)
 (setenv "WHISPER_PROCESSES" "6")
-(setenv "WHISPER_MODEL" "tiny")
+(setenv "WHISPER_MODEL" "medium")
