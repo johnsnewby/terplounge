@@ -216,14 +216,12 @@ pub fn process_transcription(session_id: usize, response: &TranslationResponse) 
         json!(session).to_string(),
         session.last_sequence,
     );
-    match session
-        .transcription_sender_tx
-        .as_ref()
-        .ok_or("couldn't find sender")?
-        .send(Message::text(json!(response).to_string()))
-    {
-        Ok(_) => (),
-        Err(e) => log::info!("Error sending: {:?}", e),
+    match session.transcription_sender_tx.as_ref() {
+        Some(sender) => match sender.send(Message::text(json!(response).to_string())) {
+            Ok(_) => (),
+            Err(e) => log::error!("Couldn't send {:?}", e),
+        },
+        None => log::warn!("No sender for session {}", session_id),
     };
     session
         .translations
@@ -398,6 +396,23 @@ pub async fn user_connected(
             }
         }
         log::debug!("Exiting loop");
+        if let Some(session) = get_session(&session_id).await {
+            match queue::get_queue().enqueue(translate::TranslationRequest {
+                session_id,
+                sequence_number: session.sequence_number,
+                payload: session.buffer.clone(),
+                lang: session.language.clone(),
+            }) {
+                Ok(_) => log::debug!("Flushed session data"),
+                Err(e) => log::error!("Error flushing session buffer: {:?}", e),
+            }
+            mutate_session(&session_id, |session| session.sequence_number += 1).await;
+            match persist_session_data(&session, session.buffer.len()) {
+                Ok(_) => (),
+                Err(e) => log::error!("Error in final session data persist"),
+            }
+        }
+
         user_ws_tx.close().await.unwrap();
     });
 
