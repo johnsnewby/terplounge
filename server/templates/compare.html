@@ -38,14 +38,11 @@
       const maybeUpdate = async () => {
         const status = await getStatus();
         console.log(`got status: ${JSON.stringify(status)}`);
-        if (status.transcription_count === status.transcription_job_count - 1) {
-          return;
-        }
         last_transcription_count = status.transcription_completed_count;
         await updateDiffs();
         if (
-          status.transcription_completed_count !==
-          status.transcription_job_count
+          status.transcription_completed_count <==
+          status.transcription_job_count - 1
         ) {
           console.log("Setting timeout for update");
           setTimeout(maybeUpdate, 5000);
