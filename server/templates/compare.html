@@ -41,7 +41,7 @@
         last_transcription_count = status.transcription_completed_count;
         await updateDiffs();
         if (
-          status.transcription_completed_count <==
+          status.transcription_completed_count <=
           status.transcription_job_count - 1
         ) {
           console.log("Setting timeout for update");
