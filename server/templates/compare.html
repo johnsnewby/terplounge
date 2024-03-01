@@ -38,7 +38,9 @@
       const maybeUpdate = async () => {
         const status = await getStatus();
         console.log(`got status: ${JSON.stringify(status)}`);
-        last_transcription_count = status.transcription_completed_count + 1;
+        last_transcription_count = status.transcription_completed_count === 1 ?
+	  status.transcription_completed_count :
+	  status.transcription_completed_count + 1;
         await updateDiffs();
         if (
           status.transcription_completed_count <
