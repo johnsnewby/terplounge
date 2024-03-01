@@ -43,8 +43,8 @@
 	  status.transcription_completed_count + 1;
         await updateDiffs();
         if (
-          status.transcription_completed_count <
-            last_transcription_count
+          last_transcription_count < status.transcription_completed_count
+
         ) {
           console.log("Setting timeout for update");
           setTimeout(maybeUpdate, 5000);
