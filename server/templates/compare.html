@@ -38,11 +38,11 @@
       const maybeUpdate = async () => {
         const status = await getStatus();
         console.log(`got status: ${JSON.stringify(status)}`);
-        last_transcription_count = status.transcription_completed_count;
+        last_transcription_count = status.transcription_completed_count + 1;
         await updateDiffs();
         if (
-          status.transcription_completed_count <=
-          status.transcription_job_count - 1
+          status.transcription_completed_count <
+            last_transcription_count
         ) {
           console.log("Setting timeout for update");
           setTimeout(maybeUpdate, 5000);
@@ -52,7 +52,7 @@
 	}
 
         const progressDiv = document.getElementById("progress");
-        progressDiv.innerHTML = `<h1>Transcribed ${status.transcription_completed_count} / ${status.transcription_job_count}</h1>`;
+        progressDiv.innerHTML = `<h1>Transcribed ${last_transription_count} / ${status.transcription_job_count}</h1>`;
       };
 
       const updateDiffs = async () => {
