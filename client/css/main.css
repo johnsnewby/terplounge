@@ -220,6 +220,17 @@ select option {
     bottom: 4vh;
 }
 
+.player-license {
+    width: 100%;
+    text-align: center;
+}
+
+.player {
+    margin: auto;
+    width: 80vw;
+}
+
+
 .compare-container {
     display: flex;
     overflow: scroll;

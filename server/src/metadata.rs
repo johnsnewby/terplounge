@@ -7,6 +7,8 @@ use crate::error::E;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Metadata {
     pub name: String,
+    #[serde(default)]
+    pub description: String,
     pub url: String,
     pub license: String,
     pub audio: String,

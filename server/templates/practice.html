@@ -5,58 +5,59 @@
     <link rel="stylesheet" href="/css/main.css" />
   </head>
   <body>
-    <div class="container">
-      <div class="logo">TerpLounge</div>
+      <div class="container">
+	  <div class="logo">TerpLounge</div>
 
-      <div class="header">
-        <div class="message">
-          <h1>{{ metadata.name}}</h1>
-          <p>
-      <div class="controlpanel">
-        <label for="inputSource" onchange="stopTranscription">Microphone</label>
-        <select name="inputSource" id="inputSource"></select>
-        <button id="start" class="terplounge-font" onclick="go()">Start</button>
+	  <div class="header">
+              <div class="message">
+		  <h1>{{ metadata.name}}</h1>
+		  <p/>
+		  <div class="player-description">{{ metadata.description }}</div>
+		      <div class="controlpanel">
+			  <label for="inputSource" onchange="stopTranscription">Microphone</label>
+			  <select name="inputSource" id="inputSource"></select>
+			  <button id="start" class="terplounge-font" onclick="go()">Start</button>
+		      </div>
+		      <div id="player-container" class="player-container">
+			  <video width="80%" height="80%" id="player" class="player" preload="auto">
+			      <source src="/serve_resource/{{ resource_path }}" />
+			      Your browser does not support the video tag.
+			  </video>
+			  <div class="player-license">License: {{ metadata.license }}</div>
+		      </div>
+		      <div id="content" display="none">
+
+		      </div>
+		  </p>
+	      </div>
+	  </div>
       </div>
-      <div id="player-container" class="player-container">
-        <video width="80%" height="80%" id="player">
-          <source src="/serve_resource/{{ resource_path }}" />
-          Your browser does not support the video tag.
-        </video>
-      </div>
-      <div id="content" display="none"></div>
-      <!--      <a href="#" onClick="goToCompare('{{resource_path}}', '{{lang}}')"
-        >When you are done, click here</a
-      > -->
-    </div>
-          </p>
-        </div>
-      </div>
-    <input type="hidden" id="lang" name="lang" value="{{lang}}" />
-    <input type="hidden" id="resource" name="resource" value="{{resource_path}}"/>
-    <script>
-      var lang = "{{lang}}";
-    </script>
-    <script language="javascript" type="module">
-      import { populateMicrophones } from "/js/transcribe.js";
-      import { state, startPractice, goToCompare } from "/js/websocket.js";
-      const player = document.getElementById("player");
-      const startButton = document.getElementById("start");
-      await populateMicrophones();
+      <input type="hidden" id="lang" name="lang" value="{{lang}}" />
+      <input type="hidden" id="resource" name="resource" value="{{resource_path}}"/>
+      <script>
+       var lang = "{{lang}}";
+      </script>
+      <script language="javascript" type="module">
+       import { populateMicrophones } from "/js/transcribe.js";
+       import { state, startPractice, goToCompare } from "/js/websocket.js";
+       const player = document.getElementById("player");
+       const startButton = document.getElementById("start");
+       await populateMicrophones();
 
-      const go = () => {
-	startPractice();
-        player.play();
-	{% if metadata.skip > 0 %}player.currentTime = {{metadata.skip}};{% endif %}
+       const go = () => {
+	   startPractice();
+           player.play();
+	   {% if metadata.skip > 0 %}player.currentTime = {{metadata.skip}};{% endif %}
 
-        startButton.textContent = "When you're done speaking click here";
-        startButton.onclick = () => {
-          goToCompare("{{resource_path}}", "{{lang}}");
-        };
-      };
+           startButton.textContent = "When you're done speaking click here";
+           startButton.onclick = () => {
+               goToCompare("{{resource_path}}", "{{lang}}");
+           };
+       };
 
-      document.go = go;
-      document.goToCompare = goToCompare;
-      document.state = state;
-    </script>
+       document.go = go;
+       document.goToCompare = goToCompare;
+       document.state = state;
+      </script>
   </body>
 </html>
