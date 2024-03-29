@@ -182,3 +182,10 @@ RUST_BACKTRACE=
 ## Testing
 
 open the file `websocket.html` in your browser, and hit start recording. If you are lucky you'll get a couple of seconds of transcription.
+
+### Credits
+
+This project was made possible by a grant from the Prototype Fund of the German Federal Ministry of Education and Research. Many thanks for them for the support and faith in us.
+
+![Prototype Fund](PrototypeFund-P-Logo.png "Prototype Fund")
+![BMBF](bmbf-logo.jpg "BMBF")
