@@ -169,7 +169,7 @@ run the server from the `server` directory:
 cargo run
 ```
 
-## Environment variables100
+## Environment variables
 
 ```
 WHISPER_THREADS=
