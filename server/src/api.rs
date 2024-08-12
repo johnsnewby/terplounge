@@ -136,6 +136,11 @@ pub async fn get_resource_filename(resource_path: String) -> E<String> {
 }
 
 pub async fn serve() {
+    let cors = warp::cors()
+    .allow_any_origin()
+    .allow_methods(vec!["GET", "POST", "PUT", "DELETE"])
+    .allow_headers(vec!["Content-Type", "Authorization"]);
+
     let chat = warp::path("chat")
         .and(warp::query::<HashMap<String, String>>())
         .and(warp::ws())
@@ -263,7 +268,8 @@ pub async fn serve() {
         .or(serve_resource)
         .or(status)
         .or(static_content_serve)
-        .or(transcript);
+        .or(transcript)
+        .with(cors);
     log::debug!("Starting server");
     let listen;
     if let Ok(x) = std::env::var(" LISTEN") {
