@@ -8,6 +8,7 @@
   </head>
   <body>
     <div class="container">
+      <div class="logo">Terplounge</div>
       <div class="header">
         <div class="message">
           <h1>Transcription</h1>
@@ -34,11 +35,6 @@
             />
             to clear the content.
           </p>
-        </div>
-        <div class="logo">
-          <img src="img/logo-small.webp" class="logo-img" />
-        </div>
-      </div>
       <div class="controlpanel">
         <label for="inputSource" onchange="stopTranscription">Microphone</label>
         <select name="inputSource" id="inputSource"></select>
@@ -88,6 +84,8 @@
       </div>
       <div class="content" id="content"></div>
     </div>
+        </div>
+      </div>
   </body>
   <script language="javascript" type="module">
     import { populateMicrophones } from "./js/transcribe.js";

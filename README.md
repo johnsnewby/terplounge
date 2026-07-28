@@ -4,17 +4,102 @@ This repository contains the source code to Terplounge, a tool to allow solitary
 
 ## Overview
 
-The basic idea is that the user will listen to some spoken audio in one language (called the 'source' language), translate it into another ('target') language, and speak the translation out loud. A speech-to-text engine will transcribe the target audio, and at the end the user will be shown a comparison of the pre-existing translation, and their own.
+Terplounge is a tool which allows simultaneous interpreters to practice alone. It works by having audio and video of people speaking in one language, and a set of one or more translation transcripts in other languages. The user speaks into their microphone and Terplounge automatically transcribes what they say, and compares it to the 'official' translation. It's important to note that the system doesn't judge the correctness or otherwise of the users' translation, it simply compares it to the official translation.
 
-## The architecture
+## Technical overview
+
+The application consists of two parts, a server which exposes an API, and HTML/CSS/Javascript code which uses this API to provide a UX. The client-side (HTML) code serves two purposes: as an example of how to use the API, and as useable application in its own right. The front-end is bundled inside the server binary, making Terplounge usable by just downloading it to users' machines.
+
+## The server
+
+The backend ('server') is written in Rust, a high-performance language with memory-safety guarantees. The system is written to allow a choice of transcription engines--Whisper, an open-source speech-to-text system is bundled within the system, it performs relatively well on normal desktop hardware. The capability exists within the system for it to be used with commercial speech to text systems, or by integrating a system which uses a GPU to work more quickly.
+
+Audio is sent to the server by calling the `/chat` endpoint and specifying the user's sample rate. Data is sent as a raw sequence of mono 32-bit floats, little-endian, with no container or header. The server responds initially with a JSON object with this session's UUID:
+
+```
+{"uuid":"354f6692-8aa8-4d9e-aa84-766689c85146"}
+```
+
+followed by a sequence of chunks like this:
+```
+{"num_segments":3,"segment_end":720,"segment_number":0,"segment_start":0,"sequence_number":1,"translation":" Wir feiern heute nicht den Sieg einer Partei, sondern die Freiheit.","uuid":"5055d383-6b80-4427-9865-242f878c71bf"}
+```
+as the transcription proceeds.
+
+After a period of 15 seconds in which no data is sent, the server side will automatically close the connection.
+
+There are fundamentally two ways to use the server, although one doesn't need to choose one or the other. In the first, transcriptions are created which can be used to build up a library for users to practice with. In the second, the transcription is compared with a reference and the differences between the two are returned. In both cases the transcript itself and a WAV file of the user's audio are stored on the machine hosting the server — but only if `RECORDINGS_DIR` is set. Leave it unset and nothing is written to disk at all.
+
+In all cases the UUID returned by the websocket is used to identify the session. Apart from the inherent unguessability of the UUID there is no security implemented, the intention being that this would be provided by layers on top of the basic API, if needed.
+
+The calls which can be made with the UUID are:
+
+- `/chat?lang=XX&resource=YYY&rate=ZZZZ`
+
+	`lang` is a 2-letter language code, for instance `de`. It defaults to `de` if not specified. `rate` is the sample rate of the audio you are about to send and defaults to 44,100 — get this wrong and the audio is resampled by the wrong ratio, which degrades the transcription rather than failing outright. Optionally `resource` identifies a resource bundle, as described below.
+
+- `/close/:uuid`
+  marks the session for closure when all outstanding transcriptions have been completed.
+
+- `/serve_resource/:resource_path`
+	Returns the bundle's audio file, supporting HTTP range requests so a browser can seek within it. If the path begins with `/` then it will be interpreted as the exact path to a resource bundle, if not then it will be relative to the resource root, which is specified using the `ASSETS_DIR` environment variable.
+
+- `/status/:uuid`
+Returns a JSON object in this form:
+
+	```{"language":"en","uuid":"2d82da3a-e2fc-4728-8c78-3f52481bfbe2","resource":null,"sample_rate":48000,"recording":true,"transcription_job_count":7,"transcription_completed_count":0}```
+
+	`transcription_job_count` here can be compared with `transcription_completed_count` to get an idea of how the transcription process is proceeding and give feedback to the user. There is sample code for this in `server/templates/compare.html`. Note that these two counters are the only progress signal — there is no `sequence_number` or `last_sequence` field.
+
+- `/compare/:resource_id/:uuid/:lang`
+Renders an HTML page comparing the transcript stored for this session (which may be incomplete, when transcription tasks are still running) with the reference transcript.
+
+- `/changes/:resource_id/:uuid/:lang`
+The same comparison as raw JSON, which is what the page above fetches. It is an array of objects, looking like this:
+
+```
+  {
+    "change_type": "delete",
+    "content": " "
+  },
+  {
+    "change_type": "insert",
+    "content": "Mitbürger!"
+  },
+  {
+    "change_type": "insert",
+    "content": "\n\n"
+  },
+  {
+    "change_type": "equal",
+    "content": "Wir"
+  },
+  {
+    "change_type": "equal",
+    "content": " "
+  },
+  {
+    "change_type": "equal",
+    "content": "feiern"
+  },
+
+```
+
+## The client
+
+The client is programmed in HTML5, CSS and vanilla Javascript. There are no external libraries used. The intention is that the code will remain valid and useful for as long as possible. The assets are included in the binary, so one possible use case for Terplounge is to be downloaded and run on the user's machine, making the software useful even in the absence of anyone hosting it on a server.
+
+The basic entry point to the system is an index page showing the active sessions, and for each a link to its recording, its transcript and an HTML page which visualizes the changes between the user and reference transcripts. There is also a link to the transcript page, which has a useful button to copy the transcript to the clipboard.
+
+### Internals
 
 ![Architecture diagram](doc/img/architecture.png "The Terplounge architecture")
 
-Terplounge is designed to be usable as a hosted product, or on your machine. Its core is a Rust program which contains a version of the Whisper speech-to-text engine which is optimised to run on normal computers. Users connect to this program, which contains a web server, and stream audio to it, which is converted to text and stored in a session (which is not persisted--i.e. it is gone when the program terminates). The program ships with a minimal interface contained within itself, which exposes the basic features of terplounge.
+The system works by having a central multiple-producer, multiple-consumer queue onto which segments of audio are posted from the websocket(s), and which return JSON containing the fragments of transcription. Each segment is identified by a session number, and a sequence number, which monotonically increases for each session from 0. When the input connection is severed and the number of segments equals the sequence number, the output connection is also severed. After this point the data are all still held in memory, enabling the transcript and comparison still to be performed.
 
-However the idea is that these simple components are just the start of what can be done. By building a dynamic web site around these core services a rich environment can be created.
+The queuing system ensures that Terplounge will ultimately be able to process all audio, no matter how slowly.
 
-By default the system will use whisper.cpp for its transcription services, running locally on the CPU. If you have a beefier machine elsewhere you can additionally point it at a remote WhisperX server with `WHISPER_SERVER`; both backends then pull from the same job queue.
+The idea is that there will be several queue consumers, suiting different use cases. By default the system uses whisper.cpp, running locally on the CPU, as a base which works on almost all machines. On a laptop it is nowhere near real time; on a fast desktop it runs with about a 30 second lag. If you have a beefier machine elsewhere you can additionally point Terplounge at a remote WhisperX server with `WHISPER_SERVER`; both backends then pull from the same job queue.
 
 ### How audio becomes a transcript
 
@@ -22,7 +107,7 @@ By default the system will use whisper.cpp for its transcription services, runni
 2. The server buffers them and looks for a natural cut: at least 15 seconds of audio, then a 200 ms window quiet enough to count as silence. It splits in the middle of that silence.
 3. Each chunk is resampled to the 16 kHz whisper wants and pushed onto a queue that a pool of whisper workers pulls from.
 4. Whisper returns one or more segments per chunk. Each is stored against the session and pushed back down the websocket as JSON. Because several workers run at once, segments arrive **out of order** — the client reassembles them by sequence and segment number.
-5. When the client is done it POSTs `/close/:uuid`. In-flight jobs keep running; once the last one lands, the session writes its transcript out and shuts down.
+5. When the client is done it POSTs `/close/:uuid`. Whatever audio is still buffered — shorter than the usual 15 second minimum — is flushed as one final job, and that job's sequence number is recorded as the last. In-flight jobs keep running; once the last one lands, the session writes its transcript out and shuts down.
 
 Sessions live in memory only. They are gone when the process exits.
 
@@ -33,11 +118,17 @@ Only the `terplounge/` directory (this one) is tracked in git.
 | Path | What it is |
 |---|---|
 | `server/` | The Rust server. This is the product. |
+| `server/src/main.rs` | Startup only; deliberately kept as small as possible |
+| `server/src/api.rs` | The HTTP and websocket API, built on the Warp framework |
 | `server/src/session.rs` | Session state, the audio buffer, and the shutdown handshake |
-| `server/src/translate.rs` | Silence detection and resampling |
+| `server/src/queue.rs` | The producer/consumer translation queue |
+| `server/src/translate.rs` | Silence detection and resampling (arguably should be `transcribe.rs`) |
 | `server/src/whispercpp.rs` | Local whisper.cpp worker pool |
-| `server/src/whisperx.rs` | Optional remote WhisperX worker |
-| `server/src/compare.rs` | Word-diff of transcript against the reference translation |
+| `server/src/whisperx.rs` | Optional remote WhisperX worker, for greater throughput |
+| `server/src/compare.rs` | Word-diff of transcript against the reference, via the `similar` crate |
+| `server/src/metadata.rs` | Reads and resolves resource bundles |
+| `server/src/error.rs` | The `E<_>` result type and the `Er` error type |
+| `server/src/dotfiles.rs` | Not currently used, and not compiled in |
 | `server/templates/` | Askama server-rendered pages |
 | `client/` | The original vanilla-JS frontend, **compiled into the binary** |
 | `scripts/` | Model downloader, raw-audio test client, static file server |
@@ -51,9 +142,9 @@ Two sibling directories are used at runtime but are **not** part of this git rep
 | `../terplounge-fe/` | React + TypeScript frontend, a work-in-progress replacement for `client/` |
 | `../terplounge-assets/` | Practice materials: audio plus one reference translation per language |
 
-### Practice assets
+### Practice assets, a.k.a. resource bundles
 
-An asset is a directory containing an audio file, one text file per language, and a `metadata.json`:
+A resource bundle is a directory containing an audio file, one text file per language, and a `metadata.json`:
 
 ```json
 {
@@ -67,7 +158,17 @@ An asset is a directory containing an audio file, one text file per language, an
 }
 ```
 
-An `assets.json` at the top of the assets directory lists the directory names as a flat JSON array. The frontend reads that, then fetches each `metadata.json` to build the source/target language pickers.
+The fields mean:
+
+- `name` — the identifier presented to the user
+- `url` — where the audio/video came from, if that can be pointed at
+- `license` — the licence the work is used under
+- `audio` — the media file; video counts too, as long as a browser can play it
+- `native` — the language spoken in the recording
+- `transcript` — a transcript of the audio in its native language, if available
+- `translations` — language code to filename, the reference translations to diff against
+
+An `assets.json` at the top of the assets directory lists the bundle directory names as a flat JSON array. The frontend reads that, then fetches each `metadata.json` to build the source/target language pickers.
 
 ## Prerequisites
 
@@ -177,9 +278,12 @@ Read from `server/.env` (see `server/.env.sample`) or the process environment.
 | `GET /compare/:asset/:uuid/:lang` | Diff page against the reference translation |
 | `GET /changes/:asset/:uuid/:lang` | The diff as JSON |
 | `GET /practice/:asset/:lang` | Server-rendered practice page |
-| `GET /serve_resource/:asset` | An asset's audio file |
-| `GET /assets/*`, `GET /recordings/*` | Static directories |
+| `GET /serve_resource/:asset` | A bundle's audio file, with HTTP range support so browsers can seek |
+| `GET /recording/:uuid` | The session's own WAV, as a download |
+| `GET /assets/*` | The assets directory, served statically |
 | `GET /` | List of active sessions |
+
+CORS is open to any origin.
 
 Progress is reported as `transcription_completed_count` out of `transcription_job_count`. There is no sequence-number field; asking for one gets you `undefined`.
 
@@ -210,6 +314,13 @@ The `uuid` comes back as the first message on the websocket.
 pip install -r scripts/requirements.txt
 python scripts/local-server.py
 ```
+
+## Credits
+
+This project was made possible by a grant from the Prototype Fund of the German Federal Ministry of Education and Research. Many thanks to them for the support and faith in us.
+
+![Prototype Fund](PrototypeFund-P-Logo.png "Prototype Fund")
+![BMBF](bmbf-logo.jpg "BMBF")
 
 ## License
 

@@ -4,10 +4,14 @@ export async function getSources() {
   const list = await response.json();
   let sources = [];
   for (const item of list) {
-    let url = "assets/" + item + "/metadata.json";
-    let response = await fetch(url);
-    let metadata = await response.json();
-    await sources.push({ directory: item, metadata: metadata });
+    try {
+      let url = "assets/" + item + "/metadata.json";
+      let response = await fetch(url);
+      let metadata = await response.json();
+      await sources.push({ directory: item, metadata: metadata });
+    } catch (e) {
+      console.warn(`Error getting resource: ${e}`);
+    }
   }
   return sources;
 }
@@ -44,7 +48,7 @@ export const getTargetLanguagesForSourceLanguage = async (sourceLanguage) => {
   }
   return [...new Set(targetLanguages)];
 }
-    
+
 export async function populateSourceSelector() {
   const sources = await getSources();
   const source_selector = document.getElementById("source-selector");
@@ -98,6 +102,5 @@ export async function sourceChanged() {
     option.text = getLanguageName(option.value);
     langageSelector.add(option);
   }
-      
-}
 
+}
