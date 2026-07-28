@@ -19,7 +19,7 @@ use warp::ws::{Message, WebSocket};
 
 const RECV_TIMEOUT_SECONDS: u64 = 15;
 
-use crate::error::E;
+use crate::error::{Er, E};
 use crate::queue::{self};
 use crate::translate::{self, TranslationResponse, TranslationResponses};
 
@@ -82,6 +82,9 @@ pub struct Status {
     pub uuid: Uuid,
     pub resource: Option<String>,
     pub sample_rate: u32,
+    /// Whether a WAV is being written for this session, i.e. whether
+    /// /recordings/<uuid> will have anything to offer.
+    pub recording: bool,
     pub transcription_job_count: usize,
     pub transcription_completed_count: usize,
 }
@@ -156,16 +159,37 @@ impl SessionData {
         Ok(responses.to_string())
     }
 
+    /// Write the transcript and session metadata out. An IO failure here must
+    /// not take down the whisper worker that happens to be finishing the
+    /// session, so problems are logged rather than panicked on.
+    fn persist_final_artifacts(&self) {
+        if let Err(e) = self.record_transcript() {
+            log::warn!("error recording transcript for {}: {}", self.uuid, e);
+        }
+        if let Err(e) = self.write_metadata() {
+            log::warn!("error writing metadata for {}: {}", self.uuid, e);
+        }
+    }
+
+    fn close_session(session: &mut SessionData) {
+        let sender = session.transcription_sender_tx.take();
+        drop(sender);
+        session.valid = false;
+        log::debug!("good bye user: {}", session.id);
+    }
+
+    /// Finalize from a synchronous context (i.e. a whisper worker thread).
     pub fn finalize_session(&mut self) {
-        self.record_transcript()
-            .expect("error recording transcript");
-        self.write_metadata().expect("error writing metadata");
-        mutate_session_sync(&self.id, |session| {
-            let sender = session.transcription_sender_tx.take();
-            drop(sender);
-            session.valid = false;
-            log::debug!("good bye user: {}", session.id);
-        });
+        self.persist_final_artifacts();
+        mutate_session_sync(&self.id, Self::close_session);
+    }
+
+    /// Finalize from an async context. `mutate_session_sync` block_on's a
+    /// second runtime, which panics if called from inside the tokio runtime,
+    /// so the async path must not go through `finalize_session`.
+    pub async fn finalize_session_async(&mut self) {
+        self.persist_final_artifacts();
+        mutate_session(&self.id, Self::close_session).await;
     }
 
     fn write_metadata(&self) -> E<()> {
@@ -194,6 +218,7 @@ impl SessionData {
             uuid: self.uuid,
             resource: self.resource.clone(),
             sample_rate: self.sample_rate,
+            recording: self.recording,
             transcription_job_count: self.sequence_number,
             transcription_completed_count: self.get_translation_count()?,
         })
@@ -217,24 +242,34 @@ lazy_static! {
 }
 
 pub fn process_transcription(session_id: usize, response: &TranslationResponse) -> E<()> {
-    let mut session = get_session_sync(&session_id).unwrap();
+    let mut session =
+        get_session_sync(&session_id).ok_or(Er::new(format!("No session {}", session_id)))?;
     log::debug!(
         "Sending {:?} to user\nSessionData is {}, last_sequence = {:?}",
         response,
         json!(session).to_string(),
         session.last_sequence,
     );
-    session
-        .transcription_sender_tx
-        .as_ref()
-        .ok_or("couldn't find sender")?
-        .send(Message::text(json!(response).to_string()))?;
+
+    // Record the segment before attempting to deliver it. A client that has
+    // already disconnected (or closed its socket right after POSTing /close)
+    // must not cost us the tail of the transcript -- /transcript and /changes
+    // read from here, and finalization counts these.
     session
         .translations
         .lock()
         .unwrap()
         .deref_mut()
         .add_translation(&response.clone())?;
+
+    match session.transcription_sender_tx.as_ref() {
+        Some(tx) => {
+            if let Err(e) = tx.send(Message::text(json!(response).to_string())) {
+                log::debug!("Client for session {} has gone away: {}", session_id, e);
+            }
+        }
+        None => log::debug!("No sender for session {}, segment recorded only", session_id),
+    }
 
     if let Some(last) = session.last_sequence
         && session.sequence_number >= last
@@ -455,7 +490,10 @@ pub async fn mark_session_for_closure_uuid(uuid: String) {
 }
 
 pub async fn mark_session_for_closure(session_id: usize) {
-    let session = get_session(&session_id).await.unwrap();
+    let session = match get_session(&session_id).await {
+        Some(s) => s,
+        None => return,
+    };
     if session.sequence_number == 0 {
         mutate_session(&session_id, |session| {
             session.transcription_sender_tx = None;
@@ -473,6 +511,25 @@ pub async fn mark_session_for_closure(session_id: usize) {
         session.last_sequence = Some(last_sequence)
     })
     .await;
+
+    // Normally finalization is triggered by the last TranslationResponse to come
+    // back (see process_transcription). But if whisper already drained every
+    // queued chunk before the client went away, no further response will arrive
+    // and nothing would ever write the transcript out -- so check here too.
+    if let Some(mut session) = get_session(&session_id).await {
+        // Resolve the count into a plain usize here: the Box<dyn Error> in the
+        // Result is not Send, and holding it across the await below would make
+        // this whole future non-Send.
+        let count = session.get_translation_count().unwrap_or(0);
+        if session.valid && count >= last_sequence + 1 {
+            log::debug!(
+                "All {} chunks already transcribed; finalizing session {} now.",
+                count,
+                session_id
+            );
+            session.finalize_session_async().await;
+        }
+    }
 }
 
 pub async fn expire_sessions() -> E<()> {

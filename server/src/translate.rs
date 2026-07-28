@@ -96,14 +96,18 @@ impl ToString for TranslationResponses {
 pub const SEND_SAMPLE_MINIMUM_TIME_SECONDS: usize = 15;
 pub const SILENCE_TIME_MILLISECONDS: usize = 200;
 pub const SILENCE_AMPLITUDE_THRESHOLD: f32 = 0.005;
-//pub const SAMPLE_RATE: f64 = 44100f64;
+/// The rate whisper expects. Everything is resampled to this before inference.
+pub const WHISPER_SAMPLE_RATE: f64 = 16000f64;
 
 /**
  * does what is says.
  */
 pub fn resample(audio_data: &Vec<f32>, from_rate: f64) -> Vec<f32> {
+    if from_rate == WHISPER_SAMPLE_RATE {
+        return audio_data.clone();
+    }
     let mut resampler = SincFixedIn::<f32>::new(
-        16000_f64 / from_rate,
+        WHISPER_SAMPLE_RATE / from_rate,
         10.0,
         SincInterpolationParameters {
             sinc_len: 256,

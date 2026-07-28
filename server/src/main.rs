@@ -1,6 +1,3 @@
-#![feature(let_chains)]
-#![feature(async_closure)]
-
 mod api;
 mod compare;
 mod error;

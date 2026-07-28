@@ -164,6 +164,30 @@ pub async fn serve(translate_tx: Sender<translate::TranslationRequest>) {
     struct StaticContent;
     let static_content_serve = warp_embed::embed(&StaticContent);
 
+    // Serve the React build if it exists: real files first, then fall back to
+    // index.html so client-side routes (/practice/..., /compare/...) resolve.
+    // warp::fs handles content-type negotiation and range requests, which a
+    // hand-rolled fs::read cannot.
+    let react_build_dir =
+        std::env::var("REACT_BUILD_DIR").unwrap_or_else(|_| "../terplounge-fe/dist".to_string());
+    let react_index = format!("{}/index.html", react_build_dir);
+    let react_files = warp::get().and(warp::fs::dir(react_build_dir));
+    // Only fall back to index.html for actual browser navigations. Without the
+    // Accept check this filter answers 200 + HTML for every unmatched path,
+    // including mistyped API routes like /status/<unknown-uuid>, which turns a
+    // clean 404 into a JSON parse error on the client.
+    let react_spa_fallback = warp::get()
+        .and(warp::header::optional::<String>("accept"))
+        .and_then(|accept: Option<String>| async move {
+            match accept {
+                Some(a) if a.contains("text/html") => Ok(()),
+                _ => Err(warp::reject::not_found()),
+            }
+        })
+        .untuple_one()
+        .and(warp::fs::file(react_index));
+    let react_serve = react_files.or(react_spa_fallback);
+
     let routes = index
         .or(assets)
         .or(changes)
@@ -175,10 +199,11 @@ pub async fn serve(translate_tx: Sender<translate::TranslationRequest>) {
         .or(serve_resource)
         .or(status)
         .or(static_content_serve)
-        .or(transcript);
+        .or(transcript)
+        .or(react_serve);
     log::debug!("Starting server");
     let listen;
-    if let Ok(x) = std::env::var(" LISTEN") {
+    if let Ok(x) = std::env::var("LISTEN") {
         listen = x.parse().unwrap();
     } else {
         listen = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 3030);

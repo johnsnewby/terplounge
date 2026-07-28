@@ -19,7 +19,9 @@ function get_script_path() {
     fi
 }
 
-models_path="$(get_script_path)/models"
+# The server loads models from ../models relative to its own working directory
+# (terplounge/server), i.e. terplounge/models -- which is one level up from here.
+models_path="$(get_script_path)/../models"
 
 # Whisper models
 models=( 
@@ -81,7 +83,8 @@ fi
 
 printf "Downloading ggml model $model from '$src' ...\n"
 
-cd "$models_path"
+mkdir -p "$models_path" || exit 1
+cd "$models_path" || exit 1
 
 if [ -f "ggml-$model.bin" ]; then
     printf "Model $model already exists. Skipping download.\n"
@@ -99,12 +102,15 @@ fi
 
 
 if [ $? -ne 0 ]; then
+    # Don't leave a truncated file behind: the existence check above would then
+    # report it as already downloaded on the next run.
+    rm -f "ggml-$model.bin"
     printf "Failed to download ggml model $model \n"
     printf "Please try again later or download the original Whisper model files and convert them yourself.\n"
     exit 1
 fi
 
-printf "Done! Model '$model' saved in 'models/ggml-$model.bin'\n"
-printf "You can now use it like this:\n\n"
-printf "  $ ./main -m models/ggml-$model.bin -f samples/jfk.wav\n"
+printf "Done! Model '$model' saved in '$(pwd)/ggml-$model.bin'\n"
+printf "Run the server from the server/ directory to pick it up:\n\n"
+printf "  $ cd $(dirname "$models_path")/server && WHISPER_MODEL=$model cargo run\n"
 printf "\n"

@@ -233,7 +233,9 @@ async function stopRecording() {
     console.log("Error disconnecting " + e);
   }
   const currentStatus = await status();
-  state.finalSequenceNumber = currentStatus.sequence_number - 1;
+  // /status reports transcription_job_count -- the number of chunks handed to
+  // whisper. The last one queued has sequence number count - 1.
+  state.finalSequenceNumber = currentStatus.transcription_job_count - 1;
   console.log(
     `Waiting for sequence number ${state.finalSequenceNumber} before closing websocket`,
   );
@@ -278,11 +280,13 @@ function initWebSocket(websocket_uri) {
       if (message.segment_number === 0) {
         status().then((s) => {
           if (s !== undefined) {
-            const max = s.sequence_number;
-            updateProgress((100 / max) * message.sequence_number);
+            const max = s.transcription_job_count;
+            if (max > 0) {
+              updateProgress((100 / max) * message.sequence_number);
+            }
             state.highestSequenceNumber = Math.max(
-              state.highestSequenceNumber,
-              s.sequence_number,
+              state.highestSequenceNumber ?? 0,
+              s.transcription_job_count,
             );
           }
         });

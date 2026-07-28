@@ -41,12 +41,7 @@ impl Translator for WhisperCpp {
 
         let audio_data = translation_request.payload;
 
-        let data = resample(&audio_data, 44100_f64);
-
-        let mut bytes: Vec<u8> = Vec::with_capacity(4 * data.len());
-        for val in &data {
-            bytes.extend(&val.to_le_bytes());
-        }
+        let data = resample(&audio_data, session.sample_rate as f64);
 
         let context = CTX.get().expect("Couldn't get context");
         let mut state = context.create_state().expect("failed to create state");

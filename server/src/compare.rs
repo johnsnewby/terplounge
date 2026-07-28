@@ -4,7 +4,7 @@ use crate::session::find_session_with_uuid;
 use askama::Template; // bring trait in scope
 use serde::Serialize;
 use serde_json::json;
-use similar::{ChangeTag, DiffTag, TextDiff};
+use similar::{ChangeTag, TextDiff};
 use std::fs;
 
 fn escape(from: String) -> String {
@@ -67,7 +67,6 @@ pub async fn changes(resource_path: String, uuid: String, lang: String) -> E<Vec
 
     let dest = session.transcript()?;
 
-    let comparison = get_comparison(&resource_path, &uuid, &lang).await?;
     log::debug!("Comparing");
 
     let diff = TextDiff::configure().diff_words(dest.as_str(), source.as_str());

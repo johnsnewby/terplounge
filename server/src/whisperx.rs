@@ -38,7 +38,6 @@ impl Translator for WhisperX {
         if audio_data.is_empty() {
             return Ok(());
         }
-        let data = resample(&audio_data, 44100_f64);
 
         let url = format!(
             "{}?lang={}",
@@ -49,6 +48,8 @@ impl Translator for WhisperX {
         let session = crate::session::get_session_sync(&translation_request.session_id).ok_or(
             Er::new(format!("Couldn't get session for request {:?}", session_id)),
         )?;
+
+        let data = resample(&audio_data, session.sample_rate as f64);
         debug!("Making request for translation to {}", url);
 
         let res = self.client.post(url).json(&json!(data)).send()?;
